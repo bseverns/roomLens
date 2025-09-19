@@ -1,0 +1,4 @@
+
+#N canvas 100 100 500 300 10;
+#X text 20 20 Room Lens Pd placeholder — receive OSC /roomlens and map to synth;
+#X text 20 40 Build me as needed;

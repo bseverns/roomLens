@@ -1,0 +1,92 @@
+
+# Sensor→Timbre mapping (edit this first)
+# Units: features normalized to 0–1 unless specified.
+version: 0.1
+sensors:
+  mic:
+    enabled: true
+    features:
+      rms:
+        window_ms: 200
+        transform: "log10_clamp"
+        map_to:
+          axis: "grain_density"
+          range: [0.05, 0.45]
+          curve: "linear"
+      spectral_centroid:
+        window_ms: 400
+        normalize: "site"
+        map_to:
+          axis: "filter_cutoff_hz"
+          range: [400, 8000]
+          curve: "power(0.7)"
+      hf_rolloff:
+        transform: "softclip(0.8)"
+        map_to:
+          axis: "distortion_drive"
+          range: [0.0, 0.6]
+  tof:
+    enabled: true
+    features:
+      motion_energy:
+        source: "delta_distance_per_s_abs"
+        smooth_ms: 200
+        map_to:
+          axis: "fm_index"
+          range: [0.1, 2.0]
+      proximity:
+        source: "distance_cm"
+        transform: "inverse_exp(centers=[50,120],k=1.2)"
+        map_to:
+          axis: "pitch_cluster_width_cents"
+          range: [0.0, 700.0]
+  light:
+    enabled: true
+    features:
+      lux:
+        normalize: "site"
+        map_to:
+          axis: "reverb_mix"
+          range: [0.05, 0.35]
+      flicker_hz:
+        bandpass: [50, 120]
+        map_to:
+          axis: "delay_time_ms"
+          range: [90, 350]
+  motion:
+    enabled: true
+    features:
+      burst:
+        source: "pir_flag|imu_energy"
+        debounce_ms: 200
+        map_to:
+          axis: "env_attack_ms"
+          range: [80, 5]  # more motion = faster attack
+  climate:
+    enabled: false
+    features:
+      drift:
+        source: "delta_temp_rh_5min"
+        map_to:
+          axis: "lfo_rate_hz"
+          range: [0.05, 0.4]
+  presence:
+    enabled: false
+    features:
+      count:
+        cap: 10
+        map_to:
+          axis: "stereo_width"
+          range: [0.1, 0.9]
+
+axes:
+  grain_density: {desc: "Grains per second (granular)", unit: "g/s"}
+  filter_cutoff_hz: {desc: "Lowpass cutoff", unit: "Hz"}
+  distortion_drive: {desc: "Waveshaper input gain", unit: "ratio"}
+  fm_index: {desc: "FM modulation index", unit: ""}
+  pitch_cluster_width_cents: {desc: "Width of pitch cluster", unit: "cents"}
+  reverb_mix: {desc: "Wet/dry", unit: "ratio"}
+  delay_time_ms: {desc: "Echo time", unit: "ms"}
+  env_attack_ms: {desc: "Envelope attack", unit: "ms"}
+  lfo_rate_hz: {desc: "Slow drift LFO", unit: "Hz"}
+  stereo_width: {desc: "Mid/Side width", unit: ""}
