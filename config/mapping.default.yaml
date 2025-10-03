@@ -1,6 +1,9 @@
 
 # Sensor→Timbre mapping (edit this first)
 # Units: features normalized to 0–1 unless specified.
+# Reference hardware: see hardware/README.md and firmware stubs referencing
+# PJRC Teensy 4.0 [1], VL53L1X ToF [2], and TSL2591 lux [3]. These comments are
+# your cheat-sheet when translating sensor swaps into new mappings.
 version: 0.1
 sensors:
   mic:
@@ -90,3 +93,8 @@ axes:
   env_attack_ms: {desc: "Envelope attack", unit: "ms"}
   lfo_rate_hz: {desc: "Slow drift LFO", unit: "Hz"}
   stereo_width: {desc: "Mid/Side width", unit: ""}
+
+# References:
+# [1] PJRC. Teensy 4.0 Technical Specifications. https://www.pjrc.com/store/teensy40.html
+# [2] SparkFun. VL53L1X Hookup Guide. https://learn.sparkfun.com/tutorials/vl53l1x-distance-sensor-hookup-guide
+# [3] Adafruit. TSL2591 Guide. https://learn.adafruit.com/adafruit-tsl2591
