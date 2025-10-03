@@ -87,6 +87,10 @@ SENSORS → FEATURES → GESTURES → MAPPINGS → SYNTH
 - **Mappings**: normalized features → timbre axes (pitch cluster, filter cutoff, grain density…). Version control your experiments; paste snippets into critiques.
 - **Synth**: any engine that accepts OSC/MIDI. SuperCollider patch provided; Pd/prototyping path included. Bonus points for routing into MOARkNOBS‑style modular chaos.
 
+### Shared processing pipeline
+* The feature→axis glue now lives in [`roomlens/`](roomlens/README.md). Import it from any Python context (`from roomlens import MappingPipeline`) so the firmware notes, capture tools, and teaching notebooks all agree on the same maths.
+* The CLI host (`host/python/app.py`) now wraps that package, meaning whatever changes you test in a notebook land in the performance rig instantly. Hack responsibly, annotate obsessively.
+
 ---
 
 ## Artifacts to (re)gather
