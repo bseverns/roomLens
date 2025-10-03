@@ -7,92 +7,130 @@
 version: 0.1
 sensors:
   mic:
+    label: "Mic"
     enabled: true
     features:
       rms:
+        label: "RMS loudness"
         window_ms: 200
         transform: "log10_clamp"
+        doc_transform: "log10, clamp"
+        notes: "Quiet room = sparse grains"
         map_to:
-          axis: "grain_density"
-          range: [0.05, 0.45]
-          curve: "linear"
+            axis: "grain_density"
+            range: [0.05, 0.45]
+            curve: "linear"
       spectral_centroid:
+        label: "Spectral centroid"
         window_ms: 400
         normalize: "site"
+        doc_transform: "z-norm per site"
+        notes: "Site-specific normalization"
         map_to:
           axis: "filter_cutoff_hz"
           range: [400, 8000]
           curve: "power(0.7)"
       hf_rolloff:
+        label: "HF content (roll-off)"
         transform: "softclip(0.8)"
+        doc_transform: "softclip"
+        notes: "Adds grit when room is bright"
         map_to:
           axis: "distortion_drive"
           range: [0.0, 0.6]
   tof:
+    label: "ToF distance"
     enabled: true
     features:
       motion_energy:
+        label: "Δ distance/s"
         source: "delta_distance_per_s_abs"
         smooth_ms: 200
+        doc_transform: "abs, smooth(200ms)"
+        notes: "Motion energy = harmonic bite"
         map_to:
           axis: "fm_index"
           range: [0.1, 2.0]
       proximity:
+        label: "Proximity (near)"
         source: "distance_cm"
         transform: "inverse_exp(centers=[50,120],k=1.2)"
+        doc_transform: "inv exp"
+        notes: "Near = wider cluster"
         map_to:
-          axis: "pitch_cluster_width_cents"
-          range: [0.0, 700.0]
+            axis: "pitch_cluster_width_cents"
+            range: [0.0, 700.0]
+            doc_range: "±0 → ±700 cents"
   light:
+    label: "Light"
     enabled: true
     features:
       lux:
+        label: "Lux level"
         normalize: "site"
+        doc_transform: "normalize per site"
+        notes: "Brighter room = more space"
         map_to:
           axis: "reverb_mix"
           range: [0.05, 0.35]
       flicker_hz:
+        label: "Flicker Hz"
         bandpass: [50, 120]
+        doc_transform: "band-pass"
+        notes: "AC flicker drives echoes"
         map_to:
           axis: "delay_time_ms"
           range: [90, 350]
   motion:
+    label: "PIR/IMU"
     enabled: true
     features:
       burst:
+        label: "Motion flag"
         source: "pir_flag|imu_energy"
         debounce_ms: 200
+        doc_transform: "debounce"
+        notes: "More motion = snappier"
         map_to:
           axis: "env_attack_ms"
           range: [80, 5]  # more motion = faster attack
+          doc_range: "5 → 80 ms"
   climate:
+    label: "Temp/RH"
     enabled: false
     features:
       drift:
+        label: "Δ over 5 min"
         source: "delta_temp_rh_5min"
+        doc_transform: "scale"
+        notes: "Slow climate = slow drift"
         map_to:
           axis: "lfo_rate_hz"
           range: [0.05, 0.4]
   presence:
+    label: "Presence (BLE)"
     enabled: false
     features:
       count:
+        label: "Count"
         cap: 10
+        doc_transform: "cap @ 10"
+        notes: "More bodies = wider image"
         map_to:
           axis: "stereo_width"
           range: [0.1, 0.9]
 
 axes:
-  grain_density: {desc: "Grains per second (granular)", unit: "g/s"}
-  filter_cutoff_hz: {desc: "Lowpass cutoff", unit: "Hz"}
-  distortion_drive: {desc: "Waveshaper input gain", unit: "ratio"}
-  fm_index: {desc: "FM modulation index", unit: ""}
-  pitch_cluster_width_cents: {desc: "Width of pitch cluster", unit: "cents"}
-  reverb_mix: {desc: "Wet/dry", unit: "ratio"}
-  delay_time_ms: {desc: "Echo time", unit: "ms"}
-  env_attack_ms: {desc: "Envelope attack", unit: "ms"}
-  lfo_rate_hz: {desc: "Slow drift LFO", unit: "Hz"}
-  stereo_width: {desc: "Mid/Side width", unit: ""}
+  grain_density: {label: "Grain density", desc: "Grains per second (granular)", unit: "g/s", doc_unit: ""}
+  filter_cutoff_hz: {label: "Filter cutoff", desc: "Lowpass cutoff", unit: "Hz", doc_unit: "Hz"}
+  distortion_drive: {label: "Distortion drive", desc: "Waveshaper input gain", unit: "ratio", doc_unit: ""}
+  fm_index: {label: "FM index", desc: "FM modulation index", unit: "", doc_unit: ""}
+  pitch_cluster_width_cents: {label: "Pitch cluster width", desc: "Width of pitch cluster", unit: "cents", doc_unit: "cents"}
+  reverb_mix: {label: "Reverb mix", desc: "Wet/dry", unit: "ratio", doc_unit: ""}
+  delay_time_ms: {label: "Delay time", desc: "Echo time", unit: "ms", doc_unit: "ms"}
+  env_attack_ms: {label: "Envelope attack", desc: "Envelope attack", unit: "ms", doc_unit: "ms"}
+  lfo_rate_hz: {label: "LFO rate", desc: "Slow drift LFO", unit: "Hz", doc_unit: "Hz"}
+  stereo_width: {label: "Stereo width", desc: "Mid/Side width", unit: "", doc_unit: ""}
 
 # References:
 # [1] PJRC. Teensy 4.0 Technical Specifications. https://www.pjrc.com/store/teensy40.html
