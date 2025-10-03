@@ -1,0 +1,223 @@
+{
+  "version": "2.4.1",
+  "modules": [
+    {
+      "id": 1,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "AudioInterface",
+      "pos": [-72, 0],
+      "data": {
+        "audioDriver": "",
+        "audioDevice": "",
+        "audioSampleRate": 48000,
+        "audioBlockSize": 256,
+        "channels": 2,
+        "polyMode": 0,
+        "cvChannels": 8
+      }
+    },
+    {
+      "id": 2,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "Notes",
+      "pos": [-72, 220],
+      "data": {
+        "text": "Room Lens quick start:\n1. Host: app.py --osc-port 7000 --profile default\n2. Set Audio-8 to your interface\n3. Confirm OSC lights on OSCcv."
+      }
+    },
+    {
+      "id": 3,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "Notes",
+      "pos": [264, 220],
+      "data": {
+        "text": "Session log:\nDate: ____\nRoom: ____\nMap tweak: ____\nGesture surprise: ____"
+      }
+    },
+    {
+      "id": 4,
+      "plugin": "trowaSoft",
+      "version": "2.0.0",
+      "model": "OSCcv",
+      "pos": [0, 0],
+      "data": {
+        "clientAddress": "127.0.0.1",
+        "clientPort": 7000,
+        "serverPort": 7001,
+        "path": "/roomlens",
+        "channels": 8,
+        "scale": 5.0,
+        "offset": 0.0,
+        "labels": [
+          "loudness_rms",
+          "spectral_centroid",
+          "motion_energy",
+          "lux_delta",
+          "occupancy_prob",
+          "temp_drift",
+          "humidity_swing",
+          "ble_density"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCO",
+      "pos": [96, -40]
+    },
+    {
+      "id": 6,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCF",
+      "pos": [168, -40]
+    },
+    {
+      "id": 7,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCA",
+      "pos": [240, -40]
+    },
+    {
+      "id": 8,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "ADSR",
+      "pos": [168, 72]
+    },
+    {
+      "id": 9,
+      "plugin": "MindMeldModular",
+      "version": "1.5.0",
+      "model": "MixMaster",
+      "pos": [312, -48],
+      "data": {
+        "macroLabels": [
+          "Stillness",
+          "Approach",
+          "Draft",
+          "Sunshift"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "plugin": "Stoermelder-P1",
+      "version": "1.10.0",
+      "model": "MIDI-CAT",
+      "pos": [312, 120]
+    }
+  ],
+  "cables": [
+    {
+      "id": 1,
+      "outputModuleId": 4,
+      "outputId": 0,
+      "inputModuleId": 5,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 2,
+      "outputModuleId": 5,
+      "outputId": 0,
+      "inputModuleId": 6,
+      "inputId": 0,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 3,
+      "outputModuleId": 6,
+      "outputId": 0,
+      "inputModuleId": 7,
+      "inputId": 0,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 4,
+      "outputModuleId": 7,
+      "outputId": 0,
+      "inputModuleId": 9,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 5,
+      "outputModuleId": 9,
+      "outputId": 0,
+      "inputModuleId": 1,
+      "inputId": 0,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 6,
+      "outputModuleId": 4,
+      "outputId": 1,
+      "inputModuleId": 6,
+      "inputId": 1,
+      "color": "#b0b0b0"
+    },
+    {
+      "id": 7,
+      "outputModuleId": 4,
+      "outputId": 2,
+      "inputModuleId": 7,
+      "inputId": 1,
+      "color": "#b0b0b0"
+    },
+    {
+      "id": 8,
+      "outputModuleId": 4,
+      "outputId": 3,
+      "inputModuleId": 8,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 9,
+      "outputModuleId": 8,
+      "outputId": 0,
+      "inputModuleId": 7,
+      "inputId": 2,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 10,
+      "outputModuleId": 4,
+      "outputId": 4,
+      "inputModuleId": 9,
+      "inputId": 4,
+      "color": "#c91847"
+    },
+    {
+      "id": 11,
+      "outputModuleId": 4,
+      "outputId": 5,
+      "inputModuleId": 9,
+      "inputId": 5,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 12,
+      "outputModuleId": 4,
+      "outputId": 6,
+      "inputModuleId": 10,
+      "inputId": 0,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 13,
+      "outputModuleId": 4,
+      "outputId": 7,
+      "inputModuleId": 10,
+      "inputId": 1,
+      "color": "#c91847"
+    }
+  ]
+}

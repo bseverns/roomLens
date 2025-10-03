@@ -1,0 +1,253 @@
+{
+  "version": "2.4.1",
+  "modules": [
+    {
+      "id": 1,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "AudioInterface",
+      "pos": [-84, -8],
+      "data": {
+        "audioDriver": "",
+        "audioDevice": "",
+        "audioSampleRate": 48000,
+        "audioBlockSize": 256,
+        "channels": 2,
+        "polyMode": 0,
+        "cvChannels": 8
+      }
+    },
+    {
+      "id": 2,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "Notes",
+      "pos": [-84, 220],
+      "data": {
+        "text": "Texture memory setup:\n1. OSC host @7000\n2. Audio-8 -> interface\n3. Aux send 1 = Plateau, Aux 2 = DLY"
+      }
+    },
+    {
+      "id": 3,
+      "plugin": "Core",
+      "version": "2.4.1",
+      "model": "Notes",
+      "pos": [312, 220],
+      "data": {
+        "text": "Observations:\nSlow drift feel? ____\nBest macro knob? ____\nNext mapping tweak? ____"
+      }
+    },
+    {
+      "id": 4,
+      "plugin": "trowaSoft",
+      "version": "2.0.0",
+      "model": "OSCcv",
+      "pos": [0, -16],
+      "data": {
+        "clientAddress": "127.0.0.1",
+        "clientPort": 7000,
+        "serverPort": 7003,
+        "path": "/roomlens",
+        "channels": 8,
+        "scale": 5.0,
+        "offset": 0.0,
+        "labels": [
+          "loudness_rms",
+          "spectral_centroid",
+          "motion_energy",
+          "lux_delta",
+          "occupancy_prob",
+          "temp_drift",
+          "humidity_swing",
+          "ble_density"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCO",
+      "pos": [96, -56]
+    },
+    {
+      "id": 6,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCF",
+      "pos": [168, -56]
+    },
+    {
+      "id": 7,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "VCA",
+      "pos": [240, -56]
+    },
+    {
+      "id": 8,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "ADSR",
+      "pos": [168, 40]
+    },
+    {
+      "id": 9,
+      "plugin": "Fundamental",
+      "version": "2.4.0",
+      "model": "LFO",
+      "pos": [96, 40]
+    },
+    {
+      "id": 10,
+      "plugin": "Valley",
+      "version": "2.0.3",
+      "model": "Plateau",
+      "pos": [336, -64]
+    },
+    {
+      "id": 11,
+      "plugin": "Bogaudio",
+      "version": "2.5.30",
+      "model": "DLY",
+      "pos": [432, -64]
+    },
+    {
+      "id": 12,
+      "plugin": "MindMeldModular",
+      "version": "1.5.0",
+      "model": "MixMaster",
+      "pos": [528, -64],
+      "data": {
+        "macroLabels": [
+          "Dry",
+          "Plateau",
+          "DLY",
+          "Feedback"
+        ]
+      }
+    }
+  ],
+  "cables": [
+    {
+      "id": 1,
+      "outputModuleId": 4,
+      "outputId": 0,
+      "inputModuleId": 5,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 2,
+      "outputModuleId": 5,
+      "outputId": 0,
+      "inputModuleId": 6,
+      "inputId": 0,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 3,
+      "outputModuleId": 6,
+      "outputId": 0,
+      "inputModuleId": 7,
+      "inputId": 0,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 4,
+      "outputModuleId": 7,
+      "outputId": 0,
+      "inputModuleId": 12,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 5,
+      "outputModuleId": 12,
+      "outputId": 0,
+      "inputModuleId": 1,
+      "inputId": 0,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 6,
+      "outputModuleId": 12,
+      "outputId": 1,
+      "inputModuleId": 10,
+      "inputId": 0,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 7,
+      "outputModuleId": 12,
+      "outputId": 2,
+      "inputModuleId": 11,
+      "inputId": 0,
+      "color": "#c91847"
+    },
+    {
+      "id": 8,
+      "outputModuleId": 10,
+      "outputId": 0,
+      "inputModuleId": 12,
+      "inputId": 8,
+      "color": "#b0b0b0"
+    },
+    {
+      "id": 9,
+      "outputModuleId": 11,
+      "outputId": 0,
+      "inputModuleId": 12,
+      "inputId": 9,
+      "color": "#b0b0b0"
+    },
+    {
+      "id": 10,
+      "outputModuleId": 4,
+      "outputId": 1,
+      "inputModuleId": 6,
+      "inputId": 1,
+      "color": "#c91847"
+    },
+    {
+      "id": 11,
+      "outputModuleId": 4,
+      "outputId": 2,
+      "inputModuleId": 7,
+      "inputId": 1,
+      "color": "#c9b70f"
+    },
+    {
+      "id": 12,
+      "outputModuleId": 4,
+      "outputId": 3,
+      "inputModuleId": 8,
+      "inputId": 0,
+      "color": "#07a1b3"
+    },
+    {
+      "id": 13,
+      "outputModuleId": 8,
+      "outputId": 0,
+      "inputModuleId": 7,
+      "inputId": 2,
+      "color": "#c91847"
+    },
+    {
+      "id": 14,
+      "outputModuleId": 4,
+      "outputId": 4,
+      "inputModuleId": 10,
+      "inputId": 1,
+      "color": "#c91847"
+    },
+    {
+      "id": 15,
+      "outputModuleId": 4,
+      "outputId": 5,
+      "inputModuleId": 11,
+      "inputId": 1,
+      "color": "#c9b70f"
+    }
+  ]
+}
