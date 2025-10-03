@@ -76,6 +76,27 @@ python app.py --port auto --dry-audio
 
 ---
 
+## Tests (keep the rig honest)
+Before you poke at the suite, make sure your Python environment knows how to read our mapping spells. Install the host deps:
+
+```bash
+pip install -r host/python/requirements.txt  # or at minimum: pip install pyyaml
+```
+
+Both test runners matter because contributors roll with different habits. We keep them in lockstep:
+
+```bash
+python -m unittest
+```
+
+```bash
+pytest
+```
+
+The fixtures lean on `config/mapping.default.yaml`; if you scribble in that file, update the tests/fixtures so they vibe together.
+
+---
+
 ## Architecture (minimal, swappable)
 ```
 SENSORS → FEATURES → GESTURES → MAPPINGS → SYNTH
