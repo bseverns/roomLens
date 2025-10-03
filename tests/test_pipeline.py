@@ -75,6 +75,44 @@ class MappingTests(unittest.TestCase):
         # Values should serialize cleanly to JSON numbers (regression check).
         json.dumps(args)
 
+    def test_emit_osc_sends_sorted_axes(self) -> None:
+        """emit_osc should forward the prepared OSC payload to the client."""
+
+        pipeline = MappingPipeline(load_mapping(MAPPING_PATH))
+
+        class StubClient:
+            def __init__(self) -> None:
+                self.messages: list[tuple[str, list[float]]] = []
+
+            def send_message(self, address: str, args: list[float]) -> None:
+                self.messages.append((address, args))
+
+        osc_client = StubClient()
+        pipeline.bind_osc_client(osc_client)
+        payload = pipeline.process_frame(demo_frame(0.5))
+        expected_message = pipeline.prepare_osc_message(payload)
+
+        self.assertTrue(pipeline.emit_osc(payload))
+        self.assertEqual(osc_client.messages, [expected_message])
+
+    def test_emit_osc_no_axes_short_circuits(self) -> None:
+        """emit_osc should bail when there are no axes to send."""
+
+        pipeline = MappingPipeline(load_mapping(MAPPING_PATH))
+
+        class StubClient:
+            def __init__(self) -> None:
+                self.messages: list[tuple[str, list[float]]] = []
+
+            def send_message(self, address: str, args: list[float]) -> None:
+                self.messages.append((address, args))
+
+        osc_client = StubClient()
+        pipeline.bind_osc_client(osc_client)
+
+        self.assertFalse(pipeline.emit_osc({"axes": {}}))
+        self.assertEqual(osc_client.messages, [])
+
 
 if __name__ == "__main__":
     unittest.main()
