@@ -45,6 +45,19 @@ def load_mapping(path: Path):
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
+def validate_mapping_axes(mapping):
+    """Ensure every feature declares a destination axis."""
+    missing = []
+    for sensor_name, sensor_cfg in mapping.get("sensors", {}).items():
+        for feature_name, feature_cfg in sensor_cfg.get("features", {}).items():
+            map_to = feature_cfg.get("map_to", {})
+            if not map_to.get("axis"):
+                missing.append(f"{sensor_name}.{feature_name}")
+    if missing:
+        raise ValueError(
+            "Mapping entries missing map_to.axis: " + ", ".join(sorted(missing))
+        )
+
 def apply_mapping(frame, mapping):
     """ Map normalized features to timbre axes. """
     axes = {}
@@ -55,49 +68,73 @@ def apply_mapping(frame, mapping):
     if mic.get("enabled", False):
         if "rms" in mic.get("features", {}):
             t = clamp01(frame.get("mic_rms", 0.0))
-            lo, hi = mic["features"]["rms"]["map_to"]["range"]
-            axes["grain_density"] = lerp(lo, hi, t)
+            map_to = mic["features"]["rms"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
         if "spectral_centroid" in mic.get("features", {}):
             t = clamp01(frame.get("mic_sc", 0.0))
-            lo, hi = mic["features"]["spectral_centroid"]["map_to"]["range"]
-            axes["filter_cutoff_hz"] = lerp(lo, hi, t)
+            map_to = mic["features"]["spectral_centroid"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
         if "hf_rolloff" in mic.get("features", {}):
             t = clamp01(frame.get("hf", frame.get("mic_sc", 0.0)))
-            lo, hi = mic["features"]["hf_rolloff"]["map_to"]["range"]
-            axes["distortion_drive"] = lerp(lo, hi, t)
+            map_to = mic["features"]["hf_rolloff"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
 
     # ToF
     tof = s.get("tof", {})
     if tof.get("enabled", False):
         if "motion_energy" in tof.get("features", {}):
             t = clamp01(frame.get("tof_motion", 0.0))
-            lo, hi = tof["features"]["motion_energy"]["map_to"]["range"]
-            axes["fm_index"] = lerp(lo, hi, t)
+            map_to = tof["features"]["motion_energy"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
         if "proximity" in tof.get("features", {}):
             t = clamp01(frame.get("tof_near", 0.0))
-            lo, hi = tof["features"]["proximity"]["map_to"]["range"]
-            axes["pitch_cluster_width_cents"] = lerp(lo, hi, t)
+            map_to = tof["features"]["proximity"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
 
     # Light
     light = s.get("light", {})
     if light.get("enabled", False):
         if "lux" in light.get("features", {}):
             t = clamp01(frame.get("lux", 0.0))
-            lo, hi = light["features"]["lux"]["map_to"]["range"]
-            axes["reverb_mix"] = lerp(lo, hi, t)
+            map_to = light["features"]["lux"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
         if "flicker_hz" in light.get("features", {}):
             t = clamp01(frame.get("flicker", 0.0))
-            lo, hi = light["features"]["flicker_hz"]["map_to"]["range"]
-            axes["delay_time_ms"] = lerp(lo, hi, t)
+            map_to = light["features"]["flicker_hz"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                axes[axis] = lerp(lo, hi, t)
 
     # Motion burst
     motion = s.get("motion", {})
     if motion.get("enabled", True):
         if "burst" in motion.get("features", {}):
             t = 1.0 if frame.get("motion", 0) else 0.0
-            lo, hi = motion["features"]["burst"]["map_to"]["range"]
-            # note reversed mapping: more motion → faster (smaller) attack
-            axes["env_attack_ms"] = lerp(lo, hi, t)
+            map_to = motion["features"]["burst"].get("map_to", {})
+            axis = map_to.get("axis")
+            if axis:
+                lo, hi = map_to["range"]
+                # note reversed mapping: more motion → faster (smaller) attack
+                axes[axis] = lerp(lo, hi, t)
 
     return axes
 
@@ -126,6 +163,7 @@ def main():
     args = ap.parse_args()
 
     mapping = load_mapping(Path(args.mapping))
+    validate_mapping_axes(mapping)
 
     # Serial setup
     ser = None
