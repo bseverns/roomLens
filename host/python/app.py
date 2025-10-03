@@ -23,6 +23,10 @@ try:
     import serial, serial.tools.list_ports as list_ports
 except Exception:
     serial = None
+try:
+    from pythonosc import udp_client
+except Exception:
+    udp_client = None
 import yaml
 
 # --------- Utility ---------
@@ -120,12 +124,29 @@ def main():
     ap.add_argument("--port", default="auto", help="serial port or 'auto'")
     ap.add_argument("--baud", type=int, default=115200)
     ap.add_argument("--mapping", default=str(Path(__file__).parents[2] / "config/mapping.default.yaml"))
-    ap.add_argument("--osc", type=int, default=0, help="OSC out port (0=disabled)")
+    ap.add_argument(
+        "--osc",
+        type=int,
+        default=0,
+        help="OSC out port (0=disabled; pair with host/supercollider/RoomLens.scd on 57120)",
+    )
     ap.add_argument("--demo", action="store_true", help="Ignore serial; generate frames")
     ap.add_argument("--dry-audio", action="store_true", help="Do not try to render sound here; print mappings")
     args = ap.parse_args()
 
     mapping = load_mapping(Path(args.mapping))
+
+    osc_client = None
+    if args.osc:
+        if udp_client is None:
+            print("# python-osc not available; cannot send OSC", file=sys.stderr)
+        else:
+            try:
+                osc_client = udp_client.SimpleUDPClient("127.0.0.1", args.osc)
+                print(f"# OSC → 127.0.0.1:{args.osc}", file=sys.stderr)
+            except Exception as e:
+                print(f"# OSC setup failed: {e}", file=sys.stderr)
+                osc_client = None
 
     # Serial setup
     ser = None
@@ -159,8 +180,19 @@ def main():
 
         axes = apply_mapping(frame, mapping)
 
-        # Print the result (dry-audio demo path)
-        print(json.dumps({"t": frame.get("t"), "axes": axes}), flush=True)
+        payload = {"t": frame.get("t"), "axes": axes}
+
+        if osc_client is not None and axes:
+            msg = []
+            for axis, value in sorted(axes.items()):
+                msg.extend([axis, float(value)])
+            try:
+                osc_client.send_message("/roomlens", msg)
+            except Exception as e:
+                print(f"# OSC send failed: {e}", file=sys.stderr)
+
+        if args.dry_audio or osc_client is None:
+            print(json.dumps(payload), flush=True)
 
         i += 1
         if i % 100 == 0:

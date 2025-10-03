@@ -68,7 +68,7 @@ cd host/python
 python app.py --port auto --dry-audio
 ```
    Watch the terminal like a VU meter; scribble what you notice.
-3) **Patch a synth** (optional but encouraged): boot `host/supercollider/RoomLens.scd` to hear basic synthesis over OSC. Hack parameters in real time; note what felt feral vs. fragile.
+3) **Patch a synth** (optional but encouraged): boot `host/supercollider/RoomLens.scd` and run the python host with `--osc 57120` (the SuperCollider patch's default inbox) to fling axes over OSC: `python app.py --demo --osc 57120`. Hack parameters in real time; note what felt feral vs. fragile.
    - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
 4) **First test**: follow `docs/TEST_PLAN.md` to capture “room tone → gesture.” Save any field recordings, even the messy ones.
 
