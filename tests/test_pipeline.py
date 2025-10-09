@@ -30,6 +30,7 @@ class MappingTests(unittest.TestCase):
             "hf": 0.0,
             "tof_motion": 0.5,
             "tof_near": 0.5,
+            "distance_cm": 28.0,
             "lux": 1.0,
             "flicker": 0.0,
             "motion": 1,
@@ -39,7 +40,7 @@ class MappingTests(unittest.TestCase):
         self.assertAlmostEqual(axes["filter_cutoff_hz"], 400.0, places=6)
         self.assertAlmostEqual(axes["distortion_drive"], 0.0, places=6)
         self.assertAlmostEqual(axes["fm_index"], 1.05, places=6)
-        self.assertAlmostEqual(axes["pitch_cluster_width_cents"], 350.0, places=6)
+        self.assertAlmostEqual(axes["pitch_cluster_width_cents"], 354.09416, places=5)
         self.assertAlmostEqual(axes["reverb_mix"], 0.35, places=6)
         self.assertAlmostEqual(axes["delay_time_ms"], 90.0, places=6)
         self.assertAlmostEqual(axes["env_attack_ms"], 5.0, places=6)
@@ -62,6 +63,7 @@ class MappingTests(unittest.TestCase):
             "mic_sc": 0.7,
             "tof_motion": 0.3,
             "tof_near": 0.1,
+            "distance_cm": 35.0,
             "lux": 0.5,
             "flicker": 0.4,
             "motion": 0,
