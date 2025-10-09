@@ -39,12 +39,15 @@ def demo_frame(t: float | None = None) -> Dict[str, float]:
 
         return 0.5 + 0.5 * math.sin(freq * t) * math.cos(0.7 * freq * t)
 
+    tof_near = wob(0.5)
+
     return {
         "t": int(time.time() * 1000),
         "mic_rms": 0.12 + 0.1 * wob(1.7),
         "mic_sc": 0.40 + 0.3 * wob(0.9),
         "tof_motion": abs(0.5 - wob(2.3)) * 2.0,
-        "tof_near": wob(0.5),
+        "tof_near": tof_near,
+        "distance_cm": 25.0 + (1.0 - tof_near) * 150.0,
         "lux": 0.3 + 0.6 * wob(0.1),
         "flicker": wob(3.1),
         "motion": 1 if wob(2.3) > 0.65 else 0,
