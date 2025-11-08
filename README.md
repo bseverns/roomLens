@@ -5,7 +5,7 @@
 Room Lens listens to the latent choreography of a space—air, light, distance, presence—and translates those micro‑movements into sound. Think of it as a lens you point **at** a room: it refracts the scene into musical behavior. Like MOARkNOBS‑42 it is unapologetically tweakable, and like perceptual‑drift it wants to linger in the in‑between moments where nothing and everything is happening.
 
 ## Why this exists
-- **Instrument**: improvise with architecture, HVAC, footsteps, sunbeams, and silence. Twist it like MOARkNOBS‑42, but let the room push back.
+- **Instrument**: improvise with architecture, HVAC, footsteps, sunbeams, and silence. Twist it, but let the room push back.
 - **Research rig**: test mappings from multi‑sensor “scenes” to sound synthesis parameters; keep a log like a perceptual‑drift field journal.
 - **Teaching tool**: give students a rigorous, hands‑on system for sensing → thinking → making. Annotate, question, annotate again.
 
