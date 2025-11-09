@@ -30,7 +30,11 @@ room-lens/
 │   ├── PRIVACY_ETHICS.md            # Data minimization & classroom norms
 │   └── TEST_PLAN.md                 # First test: room tone → gesture
 ├── firmware/
-│   └── roomlens-teensy/             # PlatformIO Teensy 4.0 firmware
+│   ├── roomlens-teensy/             # PlatformIO Teensy 4.0 firmware
+│   │   ├── platformio.ini
+│   │   └── src/main.cpp
+│   └── roomlens-promini/            # Lean Arduino Pro Mini field pack
+│       ├── README.md                # Wiring, intent, Processing bridge
 │       ├── platformio.ini
 │       └── src/main.cpp
 ├── hardware/                        # KiCad, wiring, BOM (placeholders)
@@ -47,6 +51,9 @@ room-lens/
 │   └── gen_mapping_md.py            # YAML → docs/MAPPING_TABLE.md
 ├── examples/
 │   ├── first-test/README.md         # “Room tone → gesture” protocol
+│   ├── processing/serial_webcam_bridge/
+│   │   ├── README.md                # Laptop webcam → cam_motion serial bridge
+│   │   └── SerialWebcamBridge.pde
 │   └── vcv-rack/                    # OSC-driven VCV Rack scenes + README
 │       ├── README.md                # Install list, teaching notes, mapping chart
 │       ├── roomlens_scene_receiver.vcv
