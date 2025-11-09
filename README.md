@@ -2,7 +2,7 @@
 # Room Lens
 *A site‑sensing instrument that “plays” a room*
 
-Room Lens listens to the latent choreography of a space—air, light, distance, presence—and translates those micro‑movements into sound. Think of it as a lens you point **at** a room: it refracts the scene into musical behavior. Like MOARkNOBS‑42 it is unapologetically tweakable, and like perceptual‑drift it wants to linger in the in‑between moments where nothing and everything is happening.
+Room Lens listens to the latent choreography of a space—air, light, distance, presence—and translates those micro‑movements into sound. Think of it as a lens you point **at** a room: it refracts the scene into musical behavior. Like all things should be it is unapologetically tweakable, and like perceptual‑drift it wants to linger in the in‑between moments where nothing and everything is happening.
 
 ## Why this exists
 - **Instrument**: improvise with architecture, HVAC, footsteps, sunbeams, and silence. Twist it, but let the room push back.
