@@ -106,7 +106,7 @@ SENSORS → FEATURES → GESTURES → MAPPINGS → SYNTH
 - **Features**: spectral centroid, roll‑off, loudness, motion energy, flicker Hz, deltas. Annotate what each means in the context of your room; drift with it.
 - **Gestures**: *stillness*, *approach*, *crowd*, *pulse*, *draft*, *sun change*. Name your own gestures when the room suggests better poetry.
 - **Mappings**: normalized features → timbre axes (pitch cluster, filter cutoff, grain density…). Version control your experiments; paste snippets into critiques.
-- **Synth**: any engine that accepts OSC/MIDI. SuperCollider patch provided; Pd/prototyping path included. Bonus points for routing into MOARkNOBS‑style modular chaos.
+- **Synth**: any engine that accepts OSC/MIDI. SuperCollider patch provided; Pd/prototyping path included.
 
 ### Shared processing pipeline
 * The feature→axis glue now lives in [`roomlens/`](roomlens/README.md). Import it from any Python context (`from roomlens import MappingPipeline`) so the firmware notes, capture tools, and teaching notebooks all agree on the same maths.
