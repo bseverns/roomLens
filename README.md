@@ -28,6 +28,7 @@ room-lens/
 │   ├── MAPPING_TABLE.md             # Human-readable mapping table
 │   ├── ASSUMPTION_LEDGER.md         # What we're assuming & why
 │   ├── PRIVACY_ETHICS.md            # Data minimization & classroom norms
+│   ├── ROOMLENS_OVERVIEW.md         # System diagram + no-hardware replay mode
 │   └── TEST_PLAN.md                 # First test: room tone → gesture
 ├── firmware/
 │   ├── roomlens-teensy/             # PlatformIO Teensy 4.0 firmware
@@ -60,6 +61,8 @@ room-lens/
 │       └── roomlens_texture_memory.vcv
 ├── tests/                           # Unit tests (stubs)
 └── data/
+    ├── README.md                    # What each capture is + how to record your own
+    ├── demo_walkthrough.ndjson      # 120-frame capture for replay_example_data.py
     └── calibration/                 # Sensor offsets, mic calibration
 ```
 
@@ -75,6 +78,10 @@ cd host/python
 python app.py --port auto --dry-audio
 ```
    Watch the terminal like a VU meter; scribble what you notice.
+   - **No hardware handy?** `python replay_example_data.py --loop --sleep 0.05`
+     replays `data/demo_walkthrough.ndjson` through the same mapping math so you
+     can tweak YAML ranges without a Teensy present. See
+     `docs/ROOMLENS_OVERVIEW.md` for the full diagram.
 3) **Patch a synth** (optional but encouraged): boot `host/supercollider/RoomLens.scd` and run the python host with `--osc 57120` (the SuperCollider patch's default inbox) to fling axes over OSC: `python app.py --demo --osc 57120`. Hack parameters in real time; note what felt feral vs. fragile.
    - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
 4) **First test**: follow `docs/TEST_PLAN.md` to capture “room tone → gesture.” Save any field recordings, even the messy ones.
