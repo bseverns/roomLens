@@ -34,3 +34,11 @@ quirks) so future hackers know what vibe they’re importing:
 | file | origin | notes |
 |------|--------|-------|
 | `demo_walkthrough.ndjson` | `host/python/app.py --demo` | Smooth sweep through faux motion + lux drift, 120 frames |
+
+## `calibration/`
+- **What it is**: a tiny vault for sensor offsets so the mapping math starts centered instead of guessing. See `calibration/RE
+ADME.md` for the longer riff.
+- **Starter file**: `calibration/example_baseline.yaml` holds synthetic offsets captured from the demo stream. It’s a safe fallb
+ack when you don’t have hardware connected but still want predictable replay behavior.
+- **How to extend**: record a short still-room capture with your rig, compute medians, and drop a new YAML next to the starter. 
+Annotate it like a lab notebook entry so future hackers know the room vibe.

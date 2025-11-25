@@ -1,0 +1,16 @@
+# Synthetic offsets captured from the demo sensor generator so contributors have a target format.
+# Swap these values for real baselines from your rig; treat this like a safety cap on drift.
+captured_at: 2024-05-01T12:00:00Z
+source: host/python/app.py --demo --record ../../data/calibration/example_baseline.ndjson --max-frames 240
+notes: >-
+  Demo stream held in a "quiet room" (really: an empty event loop). Values hug zero
+  so mapping math stays predictable when no hardware is plugged in.
+offsets:
+  mic_rms: 0.012
+  mic_sc: 4300
+  distance_cm: 200
+  lux: 80
+  flicker: 0
+  motion: 0
+  tof_motion: 0
+  tof_near: 0
