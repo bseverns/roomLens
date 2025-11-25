@@ -46,7 +46,7 @@ room-lens/
 │   └── supercollider/
 │       └── RoomLens.scd             # OSC receiver & synth graph
 ├── patches/
-│   └── puredata/roomlens.pd         # Placeholder Pd patch
+│   └── puredata/roomlens.pd         # Minimal Pd synth listening for /roomlens OSC
 ├── tools/
 │   ├── capture_logger.py            # Logs sensor frames → CSV/Parquet
 │   └── gen_mapping_md.py            # YAML → docs/MAPPING_TABLE.md
