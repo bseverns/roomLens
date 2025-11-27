@@ -15,6 +15,15 @@ Design tenets
 * **Teaching forward**: docstrings and inline notes reference the same sources
   cited in the notebooks and docs.
 
+Patch inbox cheat-sheet
+-----------------------
+* **VCV Rack**: ``examples/vcv-rack/*roomlens*.vcv`` already listens for OSC
+  on ``127.0.0.1:57120``.
+* **SuperCollider**: ``host/supercollider/RoomLens.scd`` opens UDP ``57120``
+  and routes ``/roomlens`` axes to LagControls.
+* **Pd**: ``patches/puredata/roomlens.pd`` expects the same bundle and wires
+  receivers you can tap inside other Pd patches.
+
 References
 ----------
 [1] PJRC. *Teensy 4.0 Technical Specifications.* https://www.pjrc.com/store/teensy40.html
@@ -43,7 +52,7 @@ import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional, Tuple
 
 # Make the repo root importable so ``roomlens`` is available when running
 # ``python host/python/app.py`` straight from a clone.
@@ -69,6 +78,14 @@ except Exception:  # pragma: no cover - MIDI is optional
     mido = None  # type: ignore[assignment]
 
 from roomlens import MappingPipeline, PatchManager, demo_frame
+
+try:  # Optional: heartbeat LED when running on SBCs
+    from gpiozero import LED
+except Exception:  # pragma: no cover - GPIO-less dev hosts
+    LED = None  # type: ignore[assignment]
+
+from roomlens import MappingPipeline, demo_frame, load_mapping
+from roomlens_output import DummyOutput, OutputFanout, parse_output_spec
 
 
 # --------- Utility ---------
@@ -196,6 +213,18 @@ def setup_pipeline(mapping: Dict[str, object], args: argparse.Namespace) -> Mapp
     """Load the mapping file and prepare the shared pipeline instance."""
 
     pipeline = MappingPipeline(mapping)
+    return mapping, pipeline
+
+    def issue_sink(frame: Dict[str, float], issues: list[Dict[str, object]]) -> None:
+        for issue in issues:
+            sensor = issue.get("sensor")
+            feature = issue.get("feature")
+            print(
+                f"# issue {sensor}.{feature}: {issue.get('type')} — {issue.get('detail')}",
+                file=sys.stderr,
+            )
+
+    pipeline = MappingPipeline(mapping, on_frame_issue=issue_sink)
     if args.osc:
         if udp_client is None:
             print("# python-osc not available; cannot send OSC", file=sys.stderr)
@@ -226,6 +255,27 @@ def frame_iterator(args: argparse.Namespace) -> Iterator[Dict[str, float]]:
         print(f"# Serial open failed ({exc}); falling back to --demo", file=sys.stderr)
         return demo_frames()
 
+
+def setup_outputs(mapping_cfg: Dict[str, object], args: argparse.Namespace) -> OutputFanout:
+    """Instantiate all requested outputs and prime their ping logs."""
+
+    specs = list(mapping_cfg.get("outputs", []) or [])
+    if args.osc:
+        specs.append({"osc": args.osc})
+
+    outputs = []
+    for spec in specs:
+        try:
+            outputs.append(parse_output_spec(spec))
+        except Exception as exc:
+            print(f"# Skipping output {spec!r}: {exc}", file=sys.stderr)
+
+    if not outputs:
+        outputs = [DummyOutput(stream=sys.stdout)]
+
+    fanout = OutputFanout(outputs)
+    fanout.ping_targets()
+    return fanout
 
 def main() -> None:
     """CLI entry point."""
@@ -326,7 +376,56 @@ def main() -> None:
         preset_names=patch_manager.available_presets,
     )
 
+        "--led-pin",
+        type=int,
+        default=-1,
+        help="Optional GPIO LED to blink with the heartbeat",
+    )
+    args = ap.parse_args()
+
+    mapping_cfg, pipeline = setup_pipeline(args)
+    outputs = setup_outputs(mapping_cfg, args)
     frames = frame_iterator(args)
+
+    heartbeat_interval_s = 1.0
+    heartbeat_drift_s = 0.35
+
+    @dataclass
+    class Heartbeat:
+        last: float
+        led: Optional[object]
+
+        def tick(self) -> None:
+            now = time.time()
+            delta = now - self.last
+            if delta < heartbeat_interval_s:
+                return
+            self.last = now
+            drift = delta - heartbeat_interval_s
+            if pipeline.has_osc_client:
+                try:
+                    pipeline._osc_client.send_message("/heartbeat", [now, drift])
+                except Exception as exc:  # pragma: no cover - UI feedback only
+                    print(f"# heartbeat OSC send failed: {exc}", file=sys.stderr)
+            if self.led:
+                try:
+                    self.led.toggle()
+                except Exception:
+                    pass
+            if abs(drift) > heartbeat_drift_s:
+                print(
+                    f"# heartbeat cadence drifted by {drift:+.3f}s", file=sys.stderr
+                )
+
+    led = None
+    if args.led_pin >= 0 and LED is not None:
+        try:
+            led = LED(args.led_pin)
+            print(f"# Heartbeat LED on GPIO {args.led_pin}", file=sys.stderr)
+        except Exception:
+            print("# LED setup failed; continuing without blink", file=sys.stderr)
+
+    heartbeat = Heartbeat(last=time.time(), led=led)
 
     for i, frame in enumerate(frames, start=1):
         try:
@@ -365,15 +464,10 @@ def main() -> None:
                 else:
                     print(f"# Patch → {active_patch} (source: {event.source})", file=sys.stderr)
 
+        heartbeat.tick()
         payload = pipeline.process_frame(frame)
 
-        sent = False
-        if pipeline.has_osc_client:
-            try:
-                sent = pipeline.emit_osc(payload)
-            except Exception as exc:  # pragma: no cover - UI feedback only
-                sent = False
-                print(f"# OSC send failed: {exc}", file=sys.stderr)
+        sent = outputs.broadcast(payload)
 
         if args.dry_audio or not sent:
             print(json.dumps(payload), flush=True)

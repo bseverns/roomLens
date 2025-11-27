@@ -35,9 +35,12 @@
 static const uint8_t PIN_MIC = A0;
 static const uint8_t PIN_LUX = A1;
 static const uint8_t PIN_PIR = 3;
+static const uint8_t PIN_STATUS_LED = LED_BUILTIN;
 
 static const uint16_t FRAME_HZ = 12;
 static const uint16_t FRAME_MS = 1000 / FRAME_HZ;
+static const uint16_t HEARTBEAT_MS = 1000;
+static const uint16_t HEARTBEAT_DRIFT_MS = 180;
 
 static const uint16_t MIC_WINDOW_MS = 16;   // sampling window for RMS/peak
 static const float    MIC_PEAK_DECAY = 0.9; // decay factor per frame
@@ -128,6 +131,7 @@ bool readPirState() {
 
 void setup() {
   pinMode(PIN_PIR, INPUT);
+  pinMode(PIN_STATUS_LED, OUTPUT);
   Serial.begin(115200);
   // No Serial.waitForUSB() on AVR; the FTDI link is just there.
   delay(50);
@@ -138,10 +142,27 @@ void setup() {
 void loop() {
   static uint32_t lastFrameMs = 0;
   static float micPeakHold = 0.0f;
+  static uint32_t lastHeartbeatMs = 0;
+  static bool ledState = false;
 
   ingestHostSerial();
 
   const uint32_t now = millis();
+  if (now - lastHeartbeatMs >= HEARTBEAT_MS) {
+    const uint32_t delta = now - lastHeartbeatMs;
+    lastHeartbeatMs = now;
+    ledState = !ledState;
+    digitalWrite(PIN_STATUS_LED, ledState ? HIGH : LOW);
+    const int32_t drift = static_cast<int32_t>(delta) - static_cast<int32_t>(HEARTBEAT_MS);
+    const bool drifted = abs(drift) > HEARTBEAT_DRIFT_MS;
+    Serial.print(F("{\"event\":\"heartbeat\",\"t\":"));
+    Serial.print(now);
+    Serial.print(F(",\"drift_ms\":"));
+    Serial.print(drift);
+    Serial.print(F(",\"cadence_ok\":"));
+    Serial.print(drifted ? 0 : 1);
+    Serial.println(F("}"));
+  }
   if (now - lastFrameMs < FRAME_MS) {
     return;
   }

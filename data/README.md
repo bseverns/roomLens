@@ -34,6 +34,19 @@ quirks) so future hackers know what vibe they’re importing:
 | file | origin | notes |
 |------|--------|-------|
 | `demo_walkthrough.ndjson` | `host/python/app.py --demo` | Smooth sweep through faux motion + lux drift, 120 frames |
+| `bad_room.ndjson` | synthetic w/ jitter + dropouts | Spike tests for the new plotter + issue callback |
+
+## `bad_room.ndjson`
+- **Why it exists**: stress the mapping with jitter, gaps, NaNs, and wobbly cadence so you can show off the new issue
+  hooks without touching hardware.
+- **What it contains**: 160 frames with stuttery ToF motion, occasional missing `mic_sc` entries, a NaN spike, and
+  stretched timestamps to fake USB hiccups.
+- **How to view it**: pipe it into the plotter and watch raw vs. normalized curves and issues stream by:
+  ```bash
+  python tools/plotaxis.py --file data/bad_room.ndjson --loop --backend plotext
+  ```
+- **Classroom riff**: pair this with the OSC plotter mode to show how `/heartbeat` keeps UIs honest when the cadence
+  drifts.
 
 ## `calibration/`
 - **What it is**: a tiny vault for sensor offsets so the mapping math starts centered instead of guessing. See `calibration/RE

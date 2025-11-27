@@ -51,12 +51,15 @@ struct SensorFrame {
 // ---- Configuration knobs for demos ----
 static const uint32_t FRAME_HZ = 25;     // how often we publish frames
 static const uint32_t FRAME_MS = 1000 / FRAME_HZ;
+static const uint32_t HEARTBEAT_MS = 1000;   // blink + emit heartbeat once per second
+static const uint32_t HEARTBEAT_DRIFT_MS = 200;
 
 // Pin aliases (adjust to your wiring). These default to common breakout wiring
 // suggestions in the SparkFun / Adafruit guides noted above.
 static const int PIN_MIC_ADC   = A2;  // Electret mic preamp output
 static const int PIN_PIR       = 6;   // Digital PIR output
 static const int PIN_IMU_INT   = 8;   // Optional IMU interrupt
+static const int PIN_STATUS_LED = LED_BUILTIN;  // Blink heartbeat
 
 // Simple helpers for smoothing / clamping -----------------------------------
 static inline float clamp01(float x){ return x < 0 ? 0 : (x > 1 ? 1 : x); }
@@ -117,6 +120,9 @@ void setup() {
   Serial.begin(115200);
   while (!Serial && millis() < 2000) { /* wait for USB */ }
 
+  pinMode(PIN_STATUS_LED, OUTPUT);
+  digitalWrite(PIN_STATUS_LED, LOW);
+
   // In real builds: init I2C (Wire.begin()), configure ToF, light, mic front-end,
   // calibrate offsets, etc. Document every assumption in docs/ASSUMPTION_LEDGER.
   Serial.println(F("{\"event\":\"boot\",\"device\":\"roomlens-teensy\"}"));
@@ -124,7 +130,27 @@ void setup() {
 
 void loop() {
   static uint32_t last = 0;
+  static uint32_t lastHeartbeat = 0;
+  static bool ledState = false;
   const uint32_t now = millis();
+
+  // Heartbeat: blink LED and emit a coarse cadence check for OSC hosts to pick up.
+  if (now - lastHeartbeat >= HEARTBEAT_MS) {
+    const uint32_t delta = now - lastHeartbeat;
+    lastHeartbeat = now;
+    ledState = !ledState;
+    digitalWrite(PIN_STATUS_LED, ledState ? HIGH : LOW);
+
+    const int32_t drift = static_cast<int32_t>(delta) - static_cast<int32_t>(HEARTBEAT_MS);
+    const bool drifted = abs(drift) > static_cast<int32_t>(HEARTBEAT_DRIFT_MS);
+    Serial.print(F("{\"event\":\"heartbeat\",\"t\":"));
+    Serial.print(now);
+    Serial.print(F(",\"drift_ms\":"));
+    Serial.print(drift);
+    Serial.print(F(",\"cadence_ok\":"));
+    Serial.print(drifted ? 0 : 1);
+    Serial.println(F("}"));
+  }
   if (now - last < FRAME_MS) return;
   last = now;
   
