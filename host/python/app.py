@@ -87,6 +87,13 @@ except Exception:  # pragma: no cover - GPIO-less dev hosts
 from roomlens import MappingPipeline, demo_frame, load_mapping
 from roomlens_output import DummyOutput, OutputFanout, parse_output_spec
 
+try:
+    from host.python.control_service import build_api
+    import uvicorn
+except Exception:  # pragma: no cover - optional web UI
+    build_api = None  # type: ignore[assignment]
+    uvicorn = None  # type: ignore[assignment]
+
 
 # --------- Utility ---------
 def find_serial() -> Optional[str]:
@@ -308,6 +315,10 @@ def main() -> None:
     ap.add_argument("--demo", action="store_true", help="Ignore serial; generate frames")
     ap.add_argument("--dry-audio", action="store_true", help="Do not render sound; print mappings")
     ap.add_argument(
+        "--api-port",
+        type=int,
+        default=0,
+        help="Run the FastAPI mapping inspector on this port (0=disable)",
         "--snapshot-dir",
         default=str(Path(__file__).parents[2] / "config/snapshots"),
         help="Where to write timestamped mapping snapshots",
@@ -387,6 +398,17 @@ def main() -> None:
     outputs = setup_outputs(mapping_cfg, args)
     frames = frame_iterator(args)
 
+    api_state = None
+    if args.api_port and build_api and uvicorn:
+        app = build_api(pipeline, Path(args.mapping))
+        api_state = getattr(app.state, "mapping_state", None)
+        config = uvicorn.Config(app, host="0.0.0.0", port=args.api_port, log_level="info")
+        server = uvicorn.Server(config)
+        thread = threading.Thread(target=server.run, daemon=True)
+        thread.start()
+        print(f"# Web UI → http://127.0.0.1:{args.api_port}", file=sys.stderr)
+    elif args.api_port:
+        print("# FastAPI/uvicorn not available; install extras to enable web UI", file=sys.stderr)
     heartbeat_interval_s = 1.0
     heartbeat_drift_s = 0.35
 
@@ -466,6 +488,11 @@ def main() -> None:
 
         heartbeat.tick()
         payload = pipeline.process_frame(frame)
+        if api_state is not None:
+            try:
+                api_state.set_last_payload(payload)
+            except Exception:
+                pass
 
         sent = outputs.broadcast(payload)
 

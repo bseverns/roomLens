@@ -11,7 +11,8 @@ from __future__ import annotations
 import ast
 import math
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping
+import copy
+from typing import Any, Callable, Dict, Mapping, MutableMapping, Sequence
 
 import yaml
 
@@ -300,7 +301,16 @@ def _apply_single_feature(
     else:
         # Defensive: if the mapping forgot a range we just forward the raw value.
         lo, hi = 0.0, 1.0
-    axes[axis] = lerp(lo, hi, t)
+
+    expo = float(map_to.get("expo", 1.0))
+    offset = float(map_to.get("offset", 0.0))
+    try:
+        expo = max(0.0, expo)
+    except TypeError:
+        expo = 1.0
+
+    eased = clamp01(t**expo if expo not in (0.0, 1.0) else t)
+    axes[axis] = lerp(lo, hi, eased) + offset
 
 
 SensorProcessor = Callable[[str, Frame, Mapping[str, Any], Dict[str, float]], None]
@@ -357,3 +367,54 @@ def _process_generic_sensor(
     for feature_name, feature_cfg in features.items():
         feature_cfg = dict(feature_cfg)
         _apply_single_feature(sensor_name, feature_name, feature_cfg, frame, axes)
+
+
+def _iter_axis_features(mapping: Mapping[str, Any], axis: str):
+    """Yield ``(sensor_name, feature_name, feature_cfg)`` matching ``axis``."""
+
+    sensors = mapping.get("sensors", {}) or {}
+    for sensor_name, sensor_cfg in sensors.items():
+        for feature_name, feature_cfg in (sensor_cfg.get("features", {}) or {}).items():
+            map_to = feature_cfg.get("map_to", {}) or {}
+            if map_to.get("axis") == axis:
+                yield sensor_name, feature_name, feature_cfg
+
+
+def update_axis_mapping(
+    mapping: MutableMapping[str, Any],
+    axis: str,
+    *,
+    range_values: Sequence[float] | None = None,
+    expo: float | None = None,
+    offset: float | None = None,
+) -> MutableMapping[str, Any]:
+    """Return ``mapping`` with the axis parameters updated in-place.
+
+    The helper is intentionally opinionated: it touches every feature that maps to
+    ``axis`` so the UI and OSC monitor stay consistent across the whole patch.
+    """
+
+    if range_values is not None:
+        if len(range_values) != 2:
+            raise ValueError("range_values must contain exactly two numbers")
+        lo, hi = float(range_values[0]), float(range_values[1])
+    else:
+        lo = hi = 0.0
+
+    for sensor_name, feature_name, feature_cfg in _iter_axis_features(mapping, axis):
+        map_to = feature_cfg.get("map_to", {}) or {}
+        if range_values is not None:
+            map_to["range"] = [lo, hi]
+        if expo is not None:
+            map_to["expo"] = float(expo)
+        if offset is not None:
+            map_to["offset"] = float(offset)
+        feature_cfg["map_to"] = map_to
+        mapping["sensors"][sensor_name]["features"][feature_name] = feature_cfg
+    return mapping
+
+
+def clone_mapping(mapping: Mapping[str, Any]) -> MutableMapping[str, Any]:
+    """Return a deep copy so edits do not mutate callers."""
+
+    return copy.deepcopy(mapping)
