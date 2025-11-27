@@ -2,11 +2,11 @@
 # Room Lens
 *A site‑sensing instrument that “plays” a room*
 
-Room Lens listens to the latent choreography of a space—air, light, distance, presence—and translates those micro‑movements into sound. Think of it as a lens you point **at** a room: it refracts the scene into musical behavior. Like all things should be it is unapologetically tweakable, and like perceptual‑drift it wants to linger in the in‑between moments where nothing and everything is happening.
+Room Lens listens to the latent choreography of a space—air, light, distance, presence—and translates those micro‑movements into sound. Think of it as a lens-aparatus you point **at** a room: it refracts the scene into musical behavior. Like all things should be it is unapologetically tweakable, and like perceptual‑drift it wants to linger in the in‑between moments where nothing and everything is happening.
 
 ## Why this exists
 - **Instrument**: improvise with architecture, HVAC, footsteps, sunbeams, and silence. Twist it, but let the room push back.
-- **Research rig**: test mappings from multi‑sensor “scenes” to sound synthesis parameters; keep a log like a perceptual‑drift field journal.
+- **Research rig**: test mappings from multi‑sensor “scenes” to sound synthesis parameters.
 - **Teaching tool**: give students a rigorous, hands‑on system for sensing → thinking → making. Annotate, question, annotate again.
 
 > Design tenet: **scene first, synth second**. We earn our notes from the room.
@@ -14,7 +14,7 @@ Room Lens listens to the latent choreography of a space—air, light, distance, 
 ---
 
 ## Repo layout
-*Half lab notebook, half demo kit. Every folder wants you to scribble margin notes.*
+*Half lab notebook, half demo kit. Notes welcome.*
 ```
 room-lens/
 ├── README.md
@@ -82,8 +82,9 @@ python app.py --port auto --dry-audio
      replays `data/demo_walkthrough.ndjson` through the same mapping math so you
      can tweak YAML ranges without a Teensy present. See
      `docs/ROOMLENS_OVERVIEW.md` for the full diagram.
-3) **Patch a synth** (optional but encouraged): boot `host/supercollider/RoomLens.scd` and run the python host with `--osc 57120` (the SuperCollider patch's default inbox) to fling axes over OSC: `python app.py --demo --osc 57120`. Hack parameters in real time; note what felt feral vs. fragile.
-   - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
+3) **Patch a synth** (optional but very encouraged): 
+   - **SuperCollider path** boot `host/supercollider/RoomLens.scd` and run the python host with `--osc 57120` (the SuperCollider patch's default inbox) to fling axes over OSC: `python app.py --demo --osc 57120`. Hack parameters in real time; note what felt feral vs. fragile.
+   - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` in your copy of VCV Rack for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
 4) **First test**: follow `docs/TEST_PLAN.md` to capture “room tone → gesture.” Save any field recordings, even the messy ones.
 
 > Next micro‑step: **Sketch/adjust the mapping table**. Start in the YAML; regenerate the pretty table with `python tools/gen_mapping_md.py`. Snapshot before/after in your notes like you would for a patchbay experiment on MOARkNOBS‑42.
