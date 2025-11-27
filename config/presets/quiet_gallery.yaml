@@ -1,0 +1,34 @@
+metadata:
+  title: "Quiet gallery"
+  intent: "Keep grains sparse and soft for contemplative rooms."
+  safety: "Clamps loudness-driven axes to avoid sudden spikes when someone coughs."
+
+sensors:
+  mic:
+    features:
+      rms:
+        map_to:
+          range: [0.02, 0.18]
+        notes: "Loudness barely moves grain density; meant for hushed installs."
+      spectral_centroid:
+        window_ms: 800
+        map_to:
+          range: [600, 4500]
+        notes: "Slower centroid tracking to avoid jitter from air vents."
+      hf_rolloff:
+        transform: "softclip(0.6)"
+        map_to:
+          range: [0.0, 0.35]
+        notes: "Gentle grit only when the room genuinely brightens."
+  light:
+    features:
+      lux:
+        map_to:
+          range: [0.05, 0.25]
+        notes: "Less reverb bloom so sunlight doesn't wash the piece out."
+  motion:
+    features:
+      burst:
+        map_to:
+          range: [120, 20]
+        notes: "Visitors get a polite nudge instead of a slap."

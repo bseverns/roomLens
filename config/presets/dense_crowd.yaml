@@ -1,0 +1,31 @@
+metadata:
+  title: "Dense crowd"
+  intent: "Let bodies and motion widen the image and drive tempo without blowing ears out."
+  safety: "Presence caps and softened proximity prevent runaway width when the room packs in."
+
+sensors:
+  mic:
+    features:
+      rms:
+        map_to:
+          range: [0.15, 0.8]
+        notes: "More headroom so cheers push density without clipping the mix."
+      spectral_centroid:
+        map_to:
+          range: [500, 8500]
+        notes: "Extra brightness keeps intelligibility over crowd murmur."
+  tof:
+    features:
+      proximity:
+        map_to:
+          range: [50.0, 850.0]
+        notes: "Pack-in pushes pitch clusters wider without going atonal."
+  presence:
+    enabled: true
+    features:
+      count:
+        cap: 30
+        map_to:
+          axis: "stereo_width"
+          range: [0.25, 1.0]
+        notes: "More people = wider image, but capped to keep PA coverage sane."
