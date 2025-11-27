@@ -1,0 +1,57 @@
+# Demo-friendly profile with annotated ranges.
+# The goal: explain *why* each choice exists so workshops can riff.
+version: 0.2
+meta:
+  intent: "Bring-the-room-up patch for synth show-and-tell"
+  notes: |
+    Each axis includes a quick teaching note. Use this as a living notebook
+    during rehearsals—save new copies with /save to preserve the lineage.
+sensors:
+  mic:
+    label: "Mic"
+    enabled: true
+    features:
+      rms:
+        label: "RMS loudness"
+        transform: "log10_clamp"
+        notes: "Bigger voices = denser grains"
+        map_to:
+          axis: "grain_density"
+          range: [0.1, 0.6]  # Slightly hotter than default for quieter rooms
+          expo: 0.9
+      spectral_centroid:
+        label: "Spectral centroid"
+        notes: "Bright mic = brighter filter"
+        map_to:
+          axis: "filter_cutoff_hz"
+          range: [600, 9000]
+          expo: 1.1
+  tof:
+    label: "ToF distance"
+    enabled: true
+    features:
+      proximity:
+        label: "Proximity"
+        transform: "inverse_exp(centers=[40,100],k=1.5)"
+        notes: "Closer bodies widen the pitch cluster for chaos-with-intent"
+        map_to:
+          axis: "pitch_cluster_width_cents"
+          range: [0, 800]
+          expo: 1.0
+          offset: 0.0
+  light:
+    label: "Light"
+    enabled: true
+    features:
+      lux:
+        label: "Lux"
+        notes: "House lights up = more wet"
+        map_to:
+          axis: "reverb_mix"
+          range: [0.1, 0.5]
+          expo: 1.0
+axes:
+  grain_density: {label: "Grain density", desc: "Grains per second", unit: "g/s"}
+  filter_cutoff_hz: {label: "Filter cutoff", desc: "Lowpass cutoff", unit: "Hz"}
+  pitch_cluster_width_cents: {label: "Pitch cluster width", desc: "± cents", unit: "cents"}
+  reverb_mix: {label: "Reverb mix", desc: "Wet/dry", unit: "ratio"}

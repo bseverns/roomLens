@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import Dict, Iterator, Optional
@@ -59,6 +60,13 @@ except Exception:  # pragma: no cover - allow OSC-less rehearsals
     udp_client = None  # type: ignore[assignment]
 
 from roomlens import MappingPipeline, demo_frame, load_mapping
+
+try:
+    from host.python.control_service import build_api
+    import uvicorn
+except Exception:  # pragma: no cover - optional web UI
+    build_api = None  # type: ignore[assignment]
+    uvicorn = None  # type: ignore[assignment]
 
 
 # --------- Utility ---------
@@ -158,13 +166,36 @@ def main() -> None:
     )
     ap.add_argument("--demo", action="store_true", help="Ignore serial; generate frames")
     ap.add_argument("--dry-audio", action="store_true", help="Do not render sound; print mappings")
+    ap.add_argument(
+        "--api-port",
+        type=int,
+        default=0,
+        help="Run the FastAPI mapping inspector on this port (0=disable)",
+    )
     args = ap.parse_args()
 
     pipeline = setup_pipeline(args)
     frames = frame_iterator(args)
 
+    api_state = None
+    if args.api_port and build_api and uvicorn:
+        app = build_api(pipeline, Path(args.mapping))
+        api_state = getattr(app.state, "mapping_state", None)
+        config = uvicorn.Config(app, host="0.0.0.0", port=args.api_port, log_level="info")
+        server = uvicorn.Server(config)
+        thread = threading.Thread(target=server.run, daemon=True)
+        thread.start()
+        print(f"# Web UI → http://127.0.0.1:{args.api_port}", file=sys.stderr)
+    elif args.api_port:
+        print("# FastAPI/uvicorn not available; install extras to enable web UI", file=sys.stderr)
+
     for i, frame in enumerate(frames, start=1):
         payload = pipeline.process_frame(frame)
+        if api_state is not None:
+            try:
+                api_state.set_last_payload(payload)
+            except Exception:
+                pass
 
         sent = False
         if pipeline.has_osc_client:

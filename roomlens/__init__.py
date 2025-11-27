@@ -22,20 +22,24 @@ from .demo import demo_frame
 from .mapping import (
     SensorProcessor,
     apply_mapping,
+    clone_mapping,
     clamp01,
     lerp,
     load_mapping,
+    update_axis_mapping,
     validate_mapping_axes,
 )
 from .pipeline import MappingPipeline
 
 __all__ = [
     "apply_mapping",
+    "clone_mapping",
     "clamp01",
     "demo_frame",
     "MappingPipeline",
     "lerp",
     "load_mapping",
+    "update_axis_mapping",
     "SensorProcessor",
     "validate_mapping_axes",
 ]
