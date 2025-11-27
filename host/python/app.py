@@ -36,8 +36,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import queue
 import sys
+import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, Optional
 
@@ -54,11 +58,17 @@ except Exception:  # pragma: no cover - guard rails for classrooms without pyser
     serial = None  # type: ignore[assignment]
     list_ports = None  # type: ignore[assignment]
 try:
-    from pythonosc import udp_client
+    from pythonosc import dispatcher, osc_server, udp_client
 except Exception:  # pragma: no cover - allow OSC-less rehearsals
+    dispatcher = None  # type: ignore[assignment]
+    osc_server = None  # type: ignore[assignment]
     udp_client = None  # type: ignore[assignment]
+try:
+    import mido
+except Exception:  # pragma: no cover - MIDI is optional
+    mido = None  # type: ignore[assignment]
 
-from roomlens import MappingPipeline, demo_frame, load_mapping
+from roomlens import MappingPipeline, PatchManager, demo_frame
 
 
 # --------- Utility ---------
@@ -104,10 +114,87 @@ def demo_frames() -> Iterator[Dict[str, float]]:
         time.sleep(0.04)
 
 
-def setup_pipeline(args: argparse.Namespace) -> MappingPipeline:
+@dataclass
+class PatchEvent:
+    action: str
+    value: Optional[str] = None
+    source: str = "cli"
+
+
+def emit_patch_confirmation(pipeline: MappingPipeline, patch: str) -> None:
+    if not pipeline.has_osc_client:
+        return
+    try:
+        pipeline._osc_client.send_message("/roomlens/patch", [patch, "loaded"])  # type: ignore[attr-defined]
+    except Exception as exc:  # pragma: no cover - UI feedback only
+        print(f"# OSC confirmation failed: {exc}", file=sys.stderr)
+
+
+def start_osc_listener(port: int, patch_queue: "queue.Queue[PatchEvent]") -> None:
+    if dispatcher is None or osc_server is None:
+        print("# python-osc not available; OSC patch listener disabled", file=sys.stderr)
+        return
+    disp = dispatcher.Dispatcher()
+
+    def _handle_patch(address: str, *args: object) -> None:  # pragma: no cover - network/UI
+        if not args:
+            return
+        target = str(args[0])
+        patch_queue.put(PatchEvent(action="set", value=target, source="osc"))
+
+    disp.map("/patch", _handle_patch)
+    server = osc_server.ThreadingOSCUDPServer(("0.0.0.0", port), disp)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    print(f"# Listening for OSC patch calls on 0.0.0.0:{port} (/patch <name>)", file=sys.stderr)
+
+
+def start_midi_listener(
+    *,
+    port: Optional[str],
+    cycle_note: int,
+    select_cc: int,
+    channel: int,
+    patch_queue: "queue.Queue[PatchEvent]",
+    preset_names: callable,
+) -> None:
+    if mido is None:
+        print("# mido not available; MIDI patch binding disabled", file=sys.stderr)
+        return
+    input_name = port
+    if not input_name:
+        candidates = mido.get_input_names()
+        if not candidates:
+            print("# No MIDI inputs found; skipping MIDI patch binding", file=sys.stderr)
+            return
+        input_name = candidates[0]
+
+    def _loop() -> None:  # pragma: no cover - hardware/UI
+        try:
+            with mido.open_input(input_name) as midi_in:
+                print(f"# MIDI patch binding → {input_name}", file=sys.stderr)
+                for msg in midi_in:
+                    if channel >= 0 and getattr(msg, "channel", channel) != channel:
+                        continue
+                    if msg.type == "note_on" and msg.note == cycle_note:
+                        patch_queue.put(PatchEvent(action="cycle", source="midi"))
+                    elif msg.type == "control_change" and msg.control == select_cc:
+                        names = preset_names()
+                        if not names:
+                            continue
+                        idx = int(round((msg.value / 127) * (len(names) - 1))) if len(names) > 1 else 0
+                        target = names[idx]
+                        patch_queue.put(PatchEvent(action="set", value=target, source="midi"))
+        except Exception as exc:
+            print(f"# MIDI listener failed: {exc}", file=sys.stderr)
+
+    thread = threading.Thread(target=_loop, daemon=True)
+    thread.start()
+
+
+def setup_pipeline(mapping: Dict[str, object], args: argparse.Namespace) -> MappingPipeline:
     """Load the mapping file and prepare the shared pipeline instance."""
 
-    mapping = load_mapping(Path(args.mapping))
     pipeline = MappingPipeline(mapping)
     if args.osc:
         if udp_client is None:
@@ -151,19 +238,133 @@ def main() -> None:
         default=str(Path(__file__).parents[2] / "config/mapping.default.yaml"),
     )
     ap.add_argument(
+        "--presets-dir",
+        default=str(Path(__file__).parents[2] / "config/presets"),
+        help="Directory containing patch YAMLs",
+    )
+    ap.add_argument("--patch", default=None, help="Preset name from presets-dir")
+    ap.add_argument(
         "--osc",
         type=int,
         default=0,
         help="OSC out port (0=disabled; pair with host/supercollider/RoomLens.scd on 57120)",
     )
+    ap.add_argument(
+        "--osc-in",
+        type=int,
+        default=0,
+        help="OSC in port for /patch <name> hot-swaps (0=disabled)",
+    )
     ap.add_argument("--demo", action="store_true", help="Ignore serial; generate frames")
     ap.add_argument("--dry-audio", action="store_true", help="Do not render sound; print mappings")
+    ap.add_argument(
+        "--snapshot-dir",
+        default=str(Path(__file__).parents[2] / "config/snapshots"),
+        help="Where to write timestamped mapping snapshots",
+    )
+    ap.add_argument(
+        "--snapshot-history",
+        type=int,
+        default=4,
+        help="How many snapshots to retain in the in-memory ring for toggling",
+    )
+    ap.add_argument(
+        "--midi-input",
+        default=None,
+        help="Optional MIDI input port name for patch switching",
+    )
+    ap.add_argument(
+        "--midi-cycle-note",
+        type=int,
+        default=60,
+        help="Note number that cycles to the next preset (default: 60/Middle C)",
+    )
+    ap.add_argument(
+        "--midi-select-cc",
+        type=int,
+        default=1,
+        help="CC number that maps its value across available presets",
+    )
+    ap.add_argument(
+        "--midi-channel",
+        type=int,
+        default=-1,
+        help="Restrict MIDI listening to a channel (0-15) or -1 for omni",
+    )
+    ap.add_argument(
+        "--log-level",
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR)",
+    )
     args = ap.parse_args()
 
-    pipeline = setup_pipeline(args)
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper(), logging.INFO),
+        format="# %(levelname)s %(message)s",
+    )
+
+    patch_manager = PatchManager(
+        base_mapping_path=Path(args.mapping),
+        presets_dir=Path(args.presets_dir),
+        snapshot_dir=Path(args.snapshot_dir),
+        history_size=args.snapshot_history,
+        logger=logging.getLogger("roomlens.patch"),
+    )
+
+    patch_queue: "queue.Queue[PatchEvent]" = queue.Queue()
+    active_patch, mapping, _ = patch_manager.load_patch(args.patch)
+    pipeline = setup_pipeline(mapping, args)
+    emit_patch_confirmation(pipeline, active_patch)
+    if args.osc_in:
+        start_osc_listener(args.osc_in, patch_queue)
+    start_midi_listener(
+        port=args.midi_input,
+        cycle_note=args.midi_cycle_note,
+        select_cc=args.midi_select_cc,
+        channel=args.midi_channel,
+        patch_queue=patch_queue,
+        preset_names=patch_manager.available_presets,
+    )
+
     frames = frame_iterator(args)
 
     for i, frame in enumerate(frames, start=1):
+        try:
+            event = patch_queue.get_nowait()
+        except queue.Empty:
+            event = None
+
+        if event:
+            if event.action == "cycle":
+                active_patch, mapping, conflicts = patch_manager.cycle()
+            elif event.action == "set" and event.value:
+                if event.value.lower() == "previous":
+                    prev = patch_manager.previous()
+                    if prev:
+                        active_patch, mapping, conflicts = prev
+                    else:
+                        conflicts = []
+                        print("# No previous patch in history", file=sys.stderr)
+                        mapping = None
+                else:
+                    active_patch, mapping, conflicts = patch_manager.load_patch(
+                        None if event.value == "default" else event.value
+                    )
+            else:
+                conflicts = []
+                mapping = None
+
+            if mapping is not None:
+                pipeline.update_mapping(mapping)
+                emit_patch_confirmation(pipeline, active_patch)
+                if conflicts:
+                    print(
+                        f"# Patch '{active_patch}' merged with overrides: {', '.join(conflicts)}",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(f"# Patch → {active_patch} (source: {event.source})", file=sys.stderr)
+
         payload = pipeline.process_frame(frame)
 
         sent = False
@@ -179,7 +380,7 @@ def main() -> None:
 
         if i % 100 == 0:
             print(
-                "# tip: edit config/mapping.default.yaml and watch axes shift in real time",
+                "# tip: edit config/mapping.default.yaml or drop a patch into config/presets",
                 file=sys.stderr,
             )
 
