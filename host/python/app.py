@@ -38,6 +38,7 @@ import argparse
 import json
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, Optional
 
@@ -57,6 +58,11 @@ try:
     from pythonosc import udp_client
 except Exception:  # pragma: no cover - allow OSC-less rehearsals
     udp_client = None  # type: ignore[assignment]
+
+try:  # Optional: heartbeat LED when running on SBCs
+    from gpiozero import LED
+except Exception:  # pragma: no cover - GPIO-less dev hosts
+    LED = None  # type: ignore[assignment]
 
 from roomlens import MappingPipeline, demo_frame, load_mapping
 
@@ -108,7 +114,17 @@ def setup_pipeline(args: argparse.Namespace) -> MappingPipeline:
     """Load the mapping file and prepare the shared pipeline instance."""
 
     mapping = load_mapping(Path(args.mapping))
-    pipeline = MappingPipeline(mapping)
+
+    def issue_sink(frame: Dict[str, float], issues: list[Dict[str, object]]) -> None:
+        for issue in issues:
+            sensor = issue.get("sensor")
+            feature = issue.get("feature")
+            print(
+                f"# issue {sensor}.{feature}: {issue.get('type')} — {issue.get('detail')}",
+                file=sys.stderr,
+            )
+
+    pipeline = MappingPipeline(mapping, on_frame_issue=issue_sink)
     if args.osc:
         if udp_client is None:
             print("# python-osc not available; cannot send OSC", file=sys.stderr)
@@ -158,12 +174,59 @@ def main() -> None:
     )
     ap.add_argument("--demo", action="store_true", help="Ignore serial; generate frames")
     ap.add_argument("--dry-audio", action="store_true", help="Do not render sound; print mappings")
+    ap.add_argument(
+        "--led-pin",
+        type=int,
+        default=-1,
+        help="Optional GPIO LED to blink with the heartbeat",
+    )
     args = ap.parse_args()
 
     pipeline = setup_pipeline(args)
     frames = frame_iterator(args)
 
+    heartbeat_interval_s = 1.0
+    heartbeat_drift_s = 0.35
+
+    @dataclass
+    class Heartbeat:
+        last: float
+        led: Optional[object]
+
+        def tick(self) -> None:
+            now = time.time()
+            delta = now - self.last
+            if delta < heartbeat_interval_s:
+                return
+            self.last = now
+            drift = delta - heartbeat_interval_s
+            if pipeline.has_osc_client:
+                try:
+                    pipeline._osc_client.send_message("/heartbeat", [now, drift])
+                except Exception as exc:  # pragma: no cover - UI feedback only
+                    print(f"# heartbeat OSC send failed: {exc}", file=sys.stderr)
+            if self.led:
+                try:
+                    self.led.toggle()
+                except Exception:
+                    pass
+            if abs(drift) > heartbeat_drift_s:
+                print(
+                    f"# heartbeat cadence drifted by {drift:+.3f}s", file=sys.stderr
+                )
+
+    led = None
+    if args.led_pin >= 0 and LED is not None:
+        try:
+            led = LED(args.led_pin)
+            print(f"# Heartbeat LED on GPIO {args.led_pin}", file=sys.stderr)
+        except Exception:
+            print("# LED setup failed; continuing without blink", file=sys.stderr)
+
+    heartbeat = Heartbeat(last=time.time(), led=led)
+
     for i, frame in enumerate(frames, start=1):
+        heartbeat.tick()
         payload = pipeline.process_frame(frame)
 
         sent = False

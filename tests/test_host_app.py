@@ -20,6 +20,7 @@ def make_args(**overrides: Any) -> argparse.Namespace:
         "port": "auto",
         "baud": 115200,
         "dry_audio": False,
+        "led_pin": -1,
     }
     defaults.update(overrides)
     return argparse.Namespace(**defaults)
@@ -36,11 +37,19 @@ def stubbed_pipeline(monkeypatch: pytest.MonkeyPatch) -> Dict[str, Any]:
         return {"axes": {"demo": 1.0}}
 
     class DummyPipeline:
-        def __init__(self, mapping: Dict[str, Any]):
+        def __init__(
+            self,
+            mapping: Dict[str, Any],
+            processors: Any = None,
+            osc_address: str = "/roomlens",
+            on_frame_issue: Any = None,
+            jitter_threshold: float = 0.35,
+        ) -> None:
             self.mapping = mapping
             self.bound_client = None
             self.has_osc_client = False
             self.emitted = []
+            self.on_frame_issue = on_frame_issue
             captured["instances"].append(self)
 
         def bind_osc_client(self, client: Any) -> None:
