@@ -15,6 +15,15 @@ Design tenets
 * **Teaching forward**: docstrings and inline notes reference the same sources
   cited in the notebooks and docs.
 
+Patch inbox cheat-sheet
+-----------------------
+* **VCV Rack**: ``examples/vcv-rack/*roomlens*.vcv`` already listens for OSC
+  on ``127.0.0.1:57120``.
+* **SuperCollider**: ``host/supercollider/RoomLens.scd`` opens UDP ``57120``
+  and routes ``/roomlens`` axes to LagControls.
+* **Pd**: ``patches/puredata/roomlens.pd`` expects the same bundle and wires
+  receivers you can tap inside other Pd patches.
+
 References
 ----------
 [1] PJRC. *Teensy 4.0 Technical Specifications.* https://www.pjrc.com/store/teensy40.html
@@ -39,7 +48,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional, Tuple
 
 # Make the repo root importable so ``roomlens`` is available when running
 # ``python host/python/app.py`` straight from a clone.
@@ -53,12 +62,9 @@ try:
 except Exception:  # pragma: no cover - guard rails for classrooms without pyserial
     serial = None  # type: ignore[assignment]
     list_ports = None  # type: ignore[assignment]
-try:
-    from pythonosc import udp_client
-except Exception:  # pragma: no cover - allow OSC-less rehearsals
-    udp_client = None  # type: ignore[assignment]
 
 from roomlens import MappingPipeline, demo_frame, load_mapping
+from roomlens_output import DummyOutput, OutputFanout, parse_output_spec
 
 
 # --------- Utility ---------
@@ -104,22 +110,12 @@ def demo_frames() -> Iterator[Dict[str, float]]:
         time.sleep(0.04)
 
 
-def setup_pipeline(args: argparse.Namespace) -> MappingPipeline:
+def setup_pipeline(args: argparse.Namespace) -> Tuple[Dict[str, object], MappingPipeline]:
     """Load the mapping file and prepare the shared pipeline instance."""
 
     mapping = load_mapping(Path(args.mapping))
     pipeline = MappingPipeline(mapping)
-    if args.osc:
-        if udp_client is None:
-            print("# python-osc not available; cannot send OSC", file=sys.stderr)
-        else:
-            try:
-                client = udp_client.SimpleUDPClient("127.0.0.1", args.osc)
-                pipeline.bind_osc_client(client)
-                print(f"# OSC → 127.0.0.1:{args.osc}", file=sys.stderr)
-            except Exception as exc:  # pragma: no cover - UI feedback only
-                print(f"# OSC setup failed: {exc}", file=sys.stderr)
-    return pipeline
+    return mapping, pipeline
 
 
 def frame_iterator(args: argparse.Namespace) -> Iterator[Dict[str, float]]:
@@ -139,6 +135,27 @@ def frame_iterator(args: argparse.Namespace) -> Iterator[Dict[str, float]]:
         print(f"# Serial open failed ({exc}); falling back to --demo", file=sys.stderr)
         return demo_frames()
 
+
+def setup_outputs(mapping_cfg: Dict[str, object], args: argparse.Namespace) -> OutputFanout:
+    """Instantiate all requested outputs and prime their ping logs."""
+
+    specs = list(mapping_cfg.get("outputs", []) or [])
+    if args.osc:
+        specs.append({"osc": args.osc})
+
+    outputs = []
+    for spec in specs:
+        try:
+            outputs.append(parse_output_spec(spec))
+        except Exception as exc:
+            print(f"# Skipping output {spec!r}: {exc}", file=sys.stderr)
+
+    if not outputs:
+        outputs = [DummyOutput(stream=sys.stdout)]
+
+    fanout = OutputFanout(outputs)
+    fanout.ping_targets()
+    return fanout
 
 def main() -> None:
     """CLI entry point."""
@@ -160,19 +177,14 @@ def main() -> None:
     ap.add_argument("--dry-audio", action="store_true", help="Do not render sound; print mappings")
     args = ap.parse_args()
 
-    pipeline = setup_pipeline(args)
+    mapping_cfg, pipeline = setup_pipeline(args)
+    outputs = setup_outputs(mapping_cfg, args)
     frames = frame_iterator(args)
 
     for i, frame in enumerate(frames, start=1):
         payload = pipeline.process_frame(frame)
 
-        sent = False
-        if pipeline.has_osc_client:
-            try:
-                sent = pipeline.emit_osc(payload)
-            except Exception as exc:  # pragma: no cover - UI feedback only
-                sent = False
-                print(f"# OSC send failed: {exc}", file=sys.stderr)
+        sent = outputs.broadcast(payload)
 
         if args.dry_audio or not sent:
             print(json.dumps(payload), flush=True)
