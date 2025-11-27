@@ -5,6 +5,9 @@
 # PJRC Teensy 4.0 [1], VL53L1X ToF [2], and TSL2591 lux [3]. These comments are
 # your cheat-sheet when translating sensor swaps into new mappings.
 version: 0.1
+outputs:
+  - osc: 57120
+  - midi: "IAC Driver Bus 1"
 sensors:
   mic:
     label: "Mic"
