@@ -87,8 +87,7 @@ python app.py --port auto --dry-audio
    - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` in your copy of VCV Rack for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
 4) **First test**: follow `docs/TEST_PLAN.md` to capture “room tone → gesture.” Save any field recordings, even the messy ones.
 
-> Next micro‑step: **Sketch/adjust the mapping table**. Start in the YAML; regenerate the pretty table with `python tools/gen_mapping_md.py`. Snapshot before/after in your notes like you would for a patchbay experiment on MOARkNOBS‑42.
-
+> Next micro‑step: **Sketch/adjust the mapping table**. Start in the YAML; regenerate the pretty table with `python tools/gen_mapping_md.py`.
 ---
 
 ## Tests (keep the rig honest)
@@ -115,13 +114,13 @@ The fixtures lean on `config/mapping.default.yaml`; if you scribble in that file
 ## Architecture (minimal, swappable)
 ```
 SENSORS → FEATURES → GESTURES → MAPPINGS → SYNTH
-  (raw)     (RMS, SC)    (enter/exit)   (axes)     (SC/Pd/python)
+  (raw)     (RMS, SC)    (enter/exit)   (axes)     (SC/VCV/python/MIDI out)
 ```
-- **Sensors**: mic, ToF/ultrasonic, PIR, IMU, light (lux/flicker), temp/RH, BLE presence. Swap or stack—treat each as another knob on that mythical 42‑bank console.
+- **Sensors**: mic, ToF/ultrasonic, PIR, IMU, light (lux/flicker), temp/RH, BLE presence. Circuit array inventories/Sparkfun parts lists coming soon.
 - **Features**: spectral centroid, roll‑off, loudness, motion energy, flicker Hz, deltas. Annotate what each means in the context of your room; drift with it.
 - **Gestures**: *stillness*, *approach*, *crowd*, *pulse*, *draft*, *sun change*. Name your own gestures when the room suggests better poetry.
 - **Mappings**: normalized features → timbre axes (pitch cluster, filter cutoff, grain density…). Version control your experiments; paste snippets into critiques.
-- **Synth**: any engine that accepts OSC/MIDI. SuperCollider patch provided; Pd/prototyping path included.
+- **Synth**: any engine that accepts OSC/MIDI. SuperCollider and VCV patches are included here as a base.
 
 ### Shared processing pipeline
 * The feature→axis glue now lives in [`roomlens/`](roomlens/README.md). Import it from any Python context (`from roomlens import MappingPipeline`) so the firmware notes, capture tools, and teaching notebooks all agree on the same maths.
