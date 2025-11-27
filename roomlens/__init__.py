@@ -30,6 +30,7 @@ from .mapping import (
     validate_mapping_axes,
 )
 from .pipeline import MappingPipeline
+from .presets import PatchManager, PresetResolver, SnapshotWriter, deep_merge
 
 __all__ = [
     "apply_mapping",
@@ -40,6 +41,10 @@ __all__ = [
     "lerp",
     "load_mapping",
     "update_axis_mapping",
+    "PatchManager",
+    "PresetResolver",
+    "SnapshotWriter",
     "SensorProcessor",
+    "deep_merge",
     "validate_mapping_axes",
 ]

@@ -1,0 +1,35 @@
+metadata:
+  title: "Noisy HVAC"
+  intent: "Lean into ventilation drones without letting noise floor run the show."
+  safety: "Extra smoothing keeps HVAC rumble from hammering the synth every frame."
+
+sensors:
+  mic:
+    features:
+      rms:
+        window_ms: 500
+        map_to:
+          range: [0.1, 0.55]
+        notes: "Longer RMS window stabilizes against fan flutter."
+      spectral_centroid:
+        window_ms: 900
+        map_to:
+          range: [200, 6000]
+        notes: "Keeps the tone dark unless the room actually brightens."
+      hf_rolloff:
+        transform: "softclip(0.9)"
+        map_to:
+          range: [0.0, 0.4]
+        notes: "Distortion stays polite when the high end is hiss-only."
+  tof:
+    features:
+      motion_energy:
+        smooth_ms: 350
+        map_to:
+          range: [0.05, 1.2]
+        notes: "Motion slices through the drone instead of vanishing under noise."
+  light:
+    features:
+      flicker_hz:
+        bandpass: [55, 65]
+        notes: "AC flicker range tightened so the HVAC hum doesn't fake echoes."
