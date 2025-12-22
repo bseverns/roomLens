@@ -4,7 +4,10 @@ captured_at: 2024-05-01T12:00:00Z
 source: host/python/app.py --demo --record ../../data/calibration/example_baseline.ndjson --max-frames 240
 notes: >-
   Demo stream held in a "quiet room" (really: an empty event loop). Values hug zero
-  so mapping math stays predictable when no hardware is plugged in.
+  so mapping math stays predictable when no hardware is plugged in. Swap these for
+  your own medians the moment you have real air, light, and distance data—this file
+  is meant to be overwritten, not venerated.
+room_context: demo-generator, zero-sensor rig, laptop fans off
 offsets:
   mic_rms: 0.012
   mic_sc: 4300
