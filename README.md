@@ -46,7 +46,7 @@ room-lens/
 │   └── supercollider/
 │       └── RoomLens.scd             # OSC receiver & synth graph
 ├── patches/
-│   └── puredata/roomlens.pd         # Minimal Pd synth listening for /roomlens OSC
+│   └── puredata/roomlens.pd         # Pd grain sketch mirroring the SuperCollider /roomlens mapping
 ├── tools/
 │   ├── capture_logger.py            # Logs sensor frames → CSV/Parquet
 │   └── gen_mapping_md.py            # YAML → docs/MAPPING_TABLE.md
@@ -82,8 +82,9 @@ python app.py --port auto --dry-audio
      replays `data/demo_walkthrough.ndjson` through the same mapping math so you
      can tweak YAML ranges without a Teensy present. See
      `docs/ROOMLENS_OVERVIEW.md` for the full diagram.
-3) **Patch a synth** (optional but very encouraged): 
+3) **Patch a synth** (optional but very encouraged):
    - **SuperCollider path** boot `host/supercollider/RoomLens.scd` and run the python host with `--osc 57120` (the SuperCollider patch's default inbox) to fling axes over OSC: `python app.py --demo --osc 57120`. Hack parameters in real time; note what felt feral vs. fragile.
+   - **Pure Data path** open `patches/puredata/roomlens.pd` (matches the SuperCollider mapping). Fire up the host with `--osc 57120` and watch the Pd receives (`grain_density`, `filter_cutoff_hz`, etc.) drive the built-in grain synth. Rip it apart to graft the OSC routing into your own patch.
    - **VCV Rack path**: open `examples/vcv-rack/roomlens_scene_receiver.vcv` in your copy of VCV Rack for the same OSC mappings used in the `vcv_patch` repo. Follow the in-patch Notes cards and log what each sensor lane does to the sound.
 4) **First test**: follow `docs/TEST_PLAN.md` to capture “room tone → gesture.” Save any field recordings, even the messy ones.
 
