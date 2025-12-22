@@ -9,8 +9,9 @@ messages. Think of it as the stagehand who knows which patch bay to hit:
   module straight into your scene.
 * **SuperCollider** – boot ``host/supercollider/RoomLens.scd``. It listens on
   ``57120`` for ``/roomlens`` messages and already maps axes to LagControls.
-* **Pure Data** – open ``patches/puredata/roomlens.pd``. It expects the same
-  OSC bundle and forwards values to Pd receivers you can tap in other patches.
+* **Pure Data** – open ``patches/puredata/roomlens.pd``. It matches the
+  SuperCollider mapping: the patch already routes ``/roomlens`` pairs into Pd
+  receivers and a tiny grain synth you can cannibalize.
 
 The vibe is half studio notebook, half teaching aide: you can peek at each
 backend, borrow the bits you need, and keep routing tweaks versioned in git.
