@@ -1,0 +1,87 @@
+metadata:
+  title: "Library transit portal (no ToF)"
+  intent: "Ignore walk-bys; respond only to sustained intentional portal motion."
+  safety: "Hard gating via cam_motion + conservative ranges."
+  notes: |
+    No ToF assumed. Designed for semi-transitory placement.
+    IMPORTANT: camera must be aimed at the portal/table zone.
+    If it still triggers from passersby: increase webcam smoothing, then raise softclip thresholds.
+
+sensors:
+  tof:
+    enabled: false
+
+  mic:
+    features:
+      rms:
+        map_to:
+          range: [0.04, 0.16]
+          expo: 1.9
+        notes: "Keep density modest even if the room gets busy."
+      spectral_centroid:
+        window_ms: 950
+        map_to:
+          range: [700, 2800]
+          expo: 1.6
+        notes: "Keep cutoff calm; avoid brittle highs."
+      hf_rolloff:
+        transform: "softclip(threshold=0.82,slope=7)"
+        map_to:
+          range: [0.00, 0.30]
+          expo: 1.3
+        notes: "Resist harshness; grit is rare."
+
+  light:
+    features:
+      lux:
+        map_to:
+          range: [0.03, 0.10]
+          expo: 1.6
+        notes: "Slight space changes only."
+      flicker_hz:
+        map_to:
+          axis: null
+        notes: "Disable flicker->delay for transit installations."
+
+  motion:
+    features:
+      burst:
+        map_to:
+          axis: null
+        notes: "Disable PIR burst; portal gating is camera-driven."
+      cam_cluster:
+        label: "Portal motion -> cluster width (hard gate)"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.86,slope=12)"
+        map_to:
+          axis: "pitch_cluster_width_cents"
+          range: [0.0, 460.0]
+          expo: 1.2
+        notes: "Harder threshold to ignore casual movement."
+      cam_attack:
+        label: "Portal motion -> attack (hard gate)"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.85,slope=12)"
+        map_to:
+          axis: "env_attack_ms"
+          range: [190, 40]
+          expo: 1.1
+        notes: "Fast only when someone commits."
+      cam_delay:
+        label: "Portal motion -> delay time"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.87,slope=12)"
+        map_to:
+          axis: "delay_time_ms"
+          range: [110, 420]
+          expo: 1.1
+        notes: "Echo becomes more apparent with sustained portal play."
+      cam_width:
+        label: "Portal motion -> stereo width"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.88,slope=13)"
+        map_to:
+          axis: "stereo_width"
+          range: [0.14, 0.72]
+          expo: 1.1
+        notes: "Space opens only with intentional motion."

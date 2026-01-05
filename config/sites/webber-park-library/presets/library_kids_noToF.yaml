@@ -1,0 +1,109 @@
+metadata:
+  title: "Kids zone playful portal (no ToF)"
+  intent: "More immediate cause/effect; still clamped for a library environment."
+  safety: "Bounded chaos: caps on drive/reverb and moderate FM."
+  notes: |
+    No ToF assumed. Designed for children’s stacks / discovery corner.
+    If it feels too sleepy: lower softclip thresholds slightly (e.g. 0.66->0.62).
+    If it feels too chaotic: reduce pitch_cluster max and distortion_drive max.
+
+sensors:
+  tof:
+    enabled: false
+
+  mic:
+    features:
+      rms:
+        map_to:
+          range: [0.05, 0.26]
+          expo: 1.4
+        notes: "Slightly wider density range; still safe."
+      spectral_centroid:
+        window_ms: 700
+        map_to:
+          range: [800, 5600]
+          expo: 1.1
+        notes: "More sparkle is allowed in kids mode."
+      hf_rolloff:
+        transform: "softclip(threshold=0.78,slope=6)"
+        map_to:
+          range: [0.00, 0.45]
+          expo: 1.1
+        notes: "Some grit possible, but capped."
+
+  light:
+    features:
+      lux:
+        map_to:
+          range: [0.05, 0.18]
+          expo: 1.2
+        notes: "More bloom; still not drenched."
+      flicker_hz:
+        map_to:
+          axis: null
+        notes: "Disable flicker->delay (camera drives delay instead)."
+
+  motion:
+    features:
+      burst:
+        source: "pir|motion|pir_flag|imu_energy"
+        debounce_ms: 250
+        map_to:
+          axis: "env_attack_ms"
+          range: [140, 20]
+          expo: 1.0
+        notes: "Optional: if PIR exists, it makes attacks perk up when kids arrive."
+      cam_cluster:
+        label: "Portal motion -> cluster width"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.68,slope=7)"
+        map_to:
+          axis: "pitch_cluster_width_cents"
+          range: [0.0, 780.0]
+          expo: 1.0
+        notes: "Wider harmonic story when motion increases."
+      cam_attack:
+        label: "Portal motion -> attack"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.66,slope=7)"
+        map_to:
+          axis: "env_attack_ms"
+          range: [120, 12]
+          expo: 1.0
+        notes: "Faster on motion; bounded to avoid clicking."
+      cam_delay:
+        label: "Portal motion -> delay time"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.72,slope=8)"
+        map_to:
+          axis: "delay_time_ms"
+          range: [130, 520]
+          expo: 1.0
+        notes: "Echo becomes part of the play."
+      cam_width:
+        label: "Portal motion -> stereo width"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.70,slope=8)"
+        map_to:
+          axis: "stereo_width"
+          range: [0.18, 0.86]
+          expo: 1.0
+        notes: "Space opens with play."
+      cam_fm:
+        label: "Portal motion -> FM index"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.74,slope=8)"
+        map_to:
+          axis: "fm_index"
+          range: [0.10, 1.40]
+          expo: 1.1
+        notes: "Adds harmonic bite as motion rises."
+      cam_drive:
+        label: "Portal motion -> drive"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.76,slope=9)"
+        map_to:
+          axis: "distortion_drive"
+          range: [0.10, 1.10]
+          expo: 1.2
+        notes: "Optional extra grit with motion; still capped."

@@ -1,0 +1,77 @@
+metadata:
+  title: "Library idle (no ToF)"
+  intent: "Polite idle state; subtle ambience that waits for intentional portal motion."
+  safety: "Avoids spikes; favors slow changes and narrow ranges."
+  notes: |
+    No ToF assumed. Works best with Pro Mini + Serial Webcam Bridge producing cam_motion.
+    Camera should be framed on the portal/table zone (not the aisle).
+
+sensors:
+  tof:
+    enabled: false
+
+  mic:
+    features:
+      rms:
+        map_to:
+          range: [0.04, 0.18]
+          expo: 1.6
+        notes: "Quiet room still has grains; loudness increases density gently."
+      spectral_centroid:
+        window_ms: 900
+        map_to:
+          range: [650, 3200]
+          expo: 1.4
+        notes: "Slow tracking to avoid HVAC jitter."
+      hf_rolloff:
+        transform: "softclip(threshold=0.80,slope=6)"
+        map_to:
+          range: [0.00, 0.35]
+          expo: 1.2
+        notes: "Grit only when HF really rises."
+
+  light:
+    features:
+      lux:
+        map_to:
+          range: [0.04, 0.12]
+          expo: 1.4
+        notes: "Brighter room blooms a little more."
+      flicker_hz:
+        map_to:
+          axis: null
+        notes: "Disable flicker->delay in libraries (often constant/meaningless)."
+
+  motion:
+    features:
+      burst:
+        map_to:
+          axis: null
+        notes: "Disable PIR burst -> env_attack for this site pack."
+      cam_cluster:
+        label: "Portal motion -> cluster width"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.78,slope=9)"
+        map_to:
+          axis: "pitch_cluster_width_cents"
+          range: [0.0, 360.0]
+          expo: 1.2
+        notes: "Mostly narrow; widens only with deliberate motion in the portal zone."
+      cam_attack:
+        label: "Portal motion -> attack"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.76,slope=8)"
+        map_to:
+          axis: "env_attack_ms"
+          range: [170, 60]
+          expo: 1.1
+        notes: "Snappier as someone commits to the portal."
+      cam_width:
+        label: "Portal motion -> stereo width"
+        source: "cam_motion"
+        transform: "softclip(threshold=0.80,slope=9)"
+        map_to:
+          axis: "stereo_width"
+          range: [0.18, 0.55]
+          expo: 1.1
+        notes: "Subtle spatial widening, not a jump-scare."
